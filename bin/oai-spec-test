@@ -1,0 +1,24 @@
+#!/usr/bin/env node
+import { spawn } from "node:child_process";
+import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
+
+const require = createRequire(import.meta.url);
+const c8 = require.resolve("c8/bin/c8.js");
+const vitestPackage = require.resolve("vitest/package.json");
+const vitest = resolve(dirname(vitestPackage), "vitest.mjs");
+
+const child = spawn(
+  process.execPath,
+  [c8, "--100", vitest, "run", "--coverage", ...process.argv.slice(2)],
+  { stdio: "inherit" }
+);
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.kill(process.pid, signal);
+    return;
+  }
+
+  process.exit(code ?? 1);
+});

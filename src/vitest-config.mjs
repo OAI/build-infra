@@ -1,7 +1,5 @@
-import { createRequire } from "node:module";
 import { defineConfig } from "vitest/config";
-
-const consumerRequire = createRequire(`${process.cwd()}/package.json`);
+import { jsonSchemaCoveragePlugin } from "@hyperjump/json-schema-coverage/vitest";
 
 export async function createVitestConfig({
   globalSetup = ["tests/schema/setup.mjs"],
@@ -12,8 +10,6 @@ export async function createVitestConfig({
     functions: 100
   } : {}
 } = {}) {
-  const { jsonSchemaCoveragePlugin } = await import(consumerRequire.resolve("@hyperjump/json-schema-coverage/vitest"));
-
   return defineConfig({
     root: process.cwd(),
     plugins: [jsonSchemaCoveragePlugin()],

@@ -1,8 +1,8 @@
-import { createRequire } from "node:module";
 import { readFile } from "node:fs/promises";
+import { addMediaTypePlugin } from "@hyperjump/browser";
+import { registerSchema } from "@hyperjump/json-schema/draft-2020-12";
+import { buildSchemaDocument, defineVocabulary } from "@hyperjump/json-schema/experimental";
 import YAML from "yaml";
-
-const consumerRequire = createRequire(`${process.cwd()}/package.json`);
 
 const parseYamlFromFile = async (filePath) => {
   const text = await readFile(filePath, "utf8");
@@ -39,9 +39,6 @@ const parseYamlFromFile = async (filePath) => {
 export function createTestConfig({ vocabularyKeywords = [] } = {}) {
   return async () => {
     try {
-      const { addMediaTypePlugin } = await import(consumerRequire.resolve("@hyperjump/browser"));
-      const { buildSchemaDocument } = await import(consumerRequire.resolve("@hyperjump/json-schema/experimental"));
-
       addMediaTypePlugin("application/schema+yaml", {
         parse: async (response) => {
           return buildSchemaDocument(YAML.parse(await response.text()), response.url);
@@ -50,9 +47,6 @@ export function createTestConfig({ vocabularyKeywords = [] } = {}) {
       });
 
       if (vocabularyKeywords.length > 0) {
-        const { registerSchema } = await import(consumerRequire.resolve("@hyperjump/json-schema/draft-2020-12"));
-        const { defineVocabulary } = await import(consumerRequire.resolve("@hyperjump/json-schema/experimental"));
-
         const dialect = await parseYamlFromFile("./src/schemas/validation/dialect.yaml");
         const meta = await parseYamlFromFile("./src/schemas/validation/meta.yaml");
         const vocabUri = Object.keys(meta.$vocabulary)[0];
