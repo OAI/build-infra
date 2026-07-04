@@ -205,6 +205,10 @@ npm install
 npm test
 ```
 
+`npm test` runs self-contained tests. Some tests create temporary fixture
+specification repositories and local Git remotes so release-command behavior can
+be checked without a separate consumer repository.
+
 To test changes in a specification repository before pushing build-infra, use a
 temporary local dependency in that repository:
 

@@ -60,8 +60,12 @@ Run the package tests:
 npm test
 ```
 
-For changes that affect consumers, also test in at least one specification
-repository with a temporary local dependency:
+These tests include self-contained fixture repositories. They exercise the
+public commands against temporary consumer-shaped Git repositories, so they can
+run locally and in GitHub CI without another checkout.
+
+For changes that affect behavior not covered by those fixtures, also test in at
+least one specification repository with a temporary local dependency:
 
 ```json
 {
