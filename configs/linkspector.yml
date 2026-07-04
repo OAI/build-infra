@@ -1,0 +1,18 @@
+files:
+  - src/oas.md
+  - CONTRIBUTING.md
+  - EDITORS.md
+  - GOVERNANCE.md
+  - IMPLEMENTATIONS.md
+  - MAINTAINERS.md
+  - README.md
+  - SECURITY_CONSIDERATIONS.md
+  - SPECIAL_INTEREST_GROUPS.md
+  - style-guide.md
+  - TOB.md
+ignorePatterns:
+  - pattern: 'clientdomain.com'
+  - pattern: 'example.org'
+  - pattern: 'https://www.w3.org/TR/xml-names11/'
+  - pattern: 'https://www.npmjs.com/package/markdownlint'
+  - pattern: 'https://www.merriam-webster.com/dictionary/'
