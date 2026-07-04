@@ -97,7 +97,16 @@ schemas does not need schema tests or `oai-spec-publish-schemas`.
    }
    ```
 
-4. Run `npm install` and commit both `package.json` and `package-lock.json`.
+4. Create or refresh the lockfile, then verify it with a clean install:
+
+   ```sh
+   npm install
+   npm ci
+   ```
+
+   `npm install` is used here only to create or update `package-lock.json`.
+   `npm ci` is the check that the lockfile is complete enough for GitHub
+   Actions. Do not open the pull request until `npm ci` succeeds locally.
 
 The lockfile is important. `package.json` intentionally tracks the `main` branch
 of `OAI/build-infra`. `package-lock.json` records that requested dependency at
@@ -131,6 +140,10 @@ npm run build-src
 Commit the resulting `package-lock.json` change in the specification repository.
 That change should update the resolved `@oai/build-infra` commit while leaving
 the requested dependency as `git+https://github.com/OAI/build-infra.git#main`.
+Before opening the pull request, run `npm ci` in the specification repository.
+If it reports missing or invalid transitive packages, the lockfile is incomplete;
+fix the lockfile and re-run `npm ci` rather than changing CI to use
+`npm install`.
 
 ## `spec.config.json`
 
@@ -206,7 +219,7 @@ to the new minor version.
 When working on this package itself:
 
 ```sh
-npm install
+npm ci
 npm test
 ```
 

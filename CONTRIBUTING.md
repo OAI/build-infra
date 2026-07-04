@@ -78,7 +78,7 @@ least one specification repository with a temporary local dependency:
 Then run the relevant consumer scripts:
 
 ```sh
-npm install
+npm ci
 npm test
 npm run validate-markdown
 npm run build
@@ -99,7 +99,7 @@ Dependabot is configured here for npm updates.
 When Dependabot opens a pull request:
 
 1. Read the release notes for major updates and security updates.
-2. Run `npm install` and `npm test`.
+2. Run `npm ci` and `npm test`.
 3. If the update touches build, markdown, schema, or test behavior, test a
    consumer repository with the local `file:../build-infra` dependency.
 4. Merge the build-infra update.
@@ -118,6 +118,40 @@ records the exact resolved Git commit under
 `packages["node_modules/@oai/build-infra"].resolved`. That resolved commit is
 intentional: it prevents CI from silently changing behavior because
 `OAI/build-infra` moved forward.
+
+### Lockfile Maintenance Warning
+
+Use `npm ci` as the normal install command in this repository and in consumer
+specification repositories, including on macOS. Do not use `npm install` merely
+to get a working local `node_modules` tree.
+
+This matters because npm has sometimes produced an incomplete `package-lock.json`
+for platform-specific optional dependencies on macOS. Known failure modes
+include omitting optional peer-resolution entries for packages such as
+`@emnapi/core` and `@emnapi/runtime`, or leaving stale transitive entries from a
+previous dependency tree. The lockfile can appear to work locally but then fail
+in GitHub Actions, where `npm ci` checks the lockfile strictly on Linux.
+
+Only use `npm install`, `npm update`, or similar commands when you are
+intentionally creating or changing a lockfile. After any dependency change in
+this repository or in a consumer repository:
+
+1. Run `npm ci`.
+2. Run `npm test`.
+3. Run any repository-specific build or validation scripts.
+4. Check that GitHub Actions also passes `npm ci`.
+5. If `npm ci` says packages are missing from the lockfile, fix the lockfile and
+   re-run `npm ci`. Do not paper over the problem by switching CI to
+   `npm install`.
+
+When setting up a new specification repository whose only npm dependency is
+`@oai/build-infra`, the consumer `package-lock.json` should contain the
+dependency tree needed by the resolved build-infra commit. If `npm ci` reports
+missing or invalid transitive packages after adding build-infra, compare the
+consumer lockfile with this repository's verified `package-lock.json` and make
+sure the consumer lockfile includes the same transitive package entries. This is
+especially important for optional dependencies, because those are where
+platform-specific lockfile gaps usually appear.
 
 ## Release Command Maintenance
 
@@ -149,8 +183,10 @@ Use `--no-push` in scratch tests.
 ## Common Failure Modes
 
 * `npm ci` fails in a consumer repository: the package lock's resolved
-  build-infra commit may not be reachable from GitHub yet, or `package.json` and
-  `package-lock.json` may disagree about the requested dependency.
+  build-infra commit may not be reachable from GitHub yet, `package.json` and
+  `package-lock.json` may disagree about the requested dependency, or the
+  consumer lockfile may be missing transitive entries from build-infra's
+  dependency tree. Verify with `npm ci` before opening the pull request.
 * Release command says the working tree is dirty: commit or stash local changes
   first. These commands intentionally refuse to mix release edits with unrelated
   work.
