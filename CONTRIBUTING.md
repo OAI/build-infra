@@ -111,8 +111,13 @@ When Dependabot opens a pull request:
 
 6. Commit the consumer repository's `package-lock.json` update.
 
-The consumer lockfile pins an exact Git commit. That is intentional. It prevents
-CI from silently changing behavior because `OAI/build-infra` moved forward.
+The consumer `package.json` should keep requesting
+`git+https://github.com/OAI/build-infra.git#main`. The consumer
+`package-lock.json` records that request at the root of the lockfile, and
+records the exact resolved Git commit under
+`packages["node_modules/@oai/build-infra"].resolved`. That resolved commit is
+intentional: it prevents CI from silently changing behavior because
+`OAI/build-infra` moved forward.
 
 ## Release Command Maintenance
 
@@ -143,9 +148,9 @@ Use `--no-push` in scratch tests.
 
 ## Common Failure Modes
 
-* `npm ci` fails in a consumer repository: the package lock probably points to a
-  build-infra commit that is not reachable from GitHub, or `package.json` and
-  `package-lock.json` disagree.
+* `npm ci` fails in a consumer repository: the package lock's resolved
+  build-infra commit may not be reachable from GitHub yet, or `package.json` and
+  `package-lock.json` may disagree about the requested dependency.
 * Release command says the working tree is dirty: commit or stash local changes
   first. These commands intentionally refuse to mix release edits with unrelated
   work.

@@ -99,9 +99,12 @@ schemas does not need schema tests or `oai-spec-publish-schemas`.
 
 4. Run `npm install` and commit both `package.json` and `package-lock.json`.
 
-The lockfile is important. Even though `package.json` says to install from the
-`main` branch, `package-lock.json` records the exact build-infra commit that was
-installed. This makes CI repeatable.
+The lockfile is important. `package.json` intentionally tracks the `main` branch
+of `OAI/build-infra`. `package-lock.json` records that requested dependency at
+the root of the lockfile, and also records the exact commit npm resolved under
+`packages["node_modules/@oai/build-infra"].resolved`. This makes CI repeatable
+while still letting maintainers update to the current `main` branch with
+`npm update @oai/build-infra`.
 
 ## Keeping Dependencies Up To Date
 
@@ -126,6 +129,8 @@ npm run build-src
 ```
 
 Commit the resulting `package-lock.json` change in the specification repository.
+That change should update the resolved `@oai/build-infra` commit while leaving
+the requested dependency as `git+https://github.com/OAI/build-infra.git#main`.
 
 ## `spec.config.json`
 
