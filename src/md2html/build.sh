@@ -31,6 +31,8 @@ SPEC_SRC="${SPEC_SRC:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(
 # resolve md2html.js relative to this script regardless of CWD
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$PACKAGE_DIR/src/shell/bin-utils.sh"
+RESPEC_BIN="$(resolve_node_bin respec "$PACKAGE_DIR")"
 
 COMMAND="${1:-}"
 
@@ -87,7 +89,7 @@ for specification in $specifications; do
   echo === Building $version to $destination
 
   node "$SCRIPT_DIR/md2html.js" --spec-config "$CONFIG_FILE" --maintainers "$maintainers" "$specification" "$allVersions" > "$tempfile"
-  "$PACKAGE_DIR/node_modules/.bin/respec" --no-sandbox --use-local --src $tempfile --out $tempfile2
+  "$RESPEC_BIN" --no-sandbox --use-local --src $tempfile --out $tempfile2
   # remove unwanted Google Tag Manager and Google Analytics scripts
   sed -e 's/<script type="text\/javascript" async="" src="https:\/\/www.google-analytics.com\/analytics.js"><\/script>//' \
       -e 's/<script type="text\/javascript" async="" src="https:\/\/www.googletagmanager.com\/gtag\/js?id=G-[^"]*"><\/script>//' \

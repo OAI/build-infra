@@ -23,7 +23,8 @@ fi
 SPEC_SLUG="${SPEC_SLUG:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.slug || 'spec')")}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-YAML_BIN="$PACKAGE_DIR/node_modules/.bin/yaml"
+source "$PACKAGE_DIR/src/shell/bin-utils.sh"
+YAML_BIN="$(resolve_node_bin yaml "$PACKAGE_DIR")"
 
 schemaDir="src/schemas/validation"
 branch=$(git branch --show-current)
