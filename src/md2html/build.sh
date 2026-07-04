@@ -1,4 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
 # Author: @MikeRalphson
 
@@ -8,32 +9,61 @@
 # Usage: build.sh [version | "latest" | "src"]
 # When run with no arguments, it builds artifacts for all published specification versions.
 # It may also be run with a specific version argument, such as "3.1.1" or "latest"
-# Finally, it may be run with "src" to build "src/oas.md"
+# Finally, it may be run with "src" to build the work-in-progress spec
+#
+# Optional environment variables:
+#   SPEC_CONFIG path to the spec config file, default: spec.config.json
+#   SPEC_SLUG   short identifier used in deploy paths, e.g. "oas", "overlay", "lifecycle"
+#   SPEC_SRC    filename of the WIP spec under src/, default: spec.md
 #
 # It contains bashisms
 
-if [ "$1" = "src" ]; then
+CONFIG_FILE="${SPEC_CONFIG:-spec.config.json}"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "Error: $CONFIG_FILE not found"
+  exit 1
+fi
+
+SPEC_SLUG="${SPEC_SLUG:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.slug || 'spec')")}"
+SPEC_SRC="${SPEC_SRC:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.specSrc || 'spec.md')")}"
+
+# resolve md2html.js relative to this script regardless of CWD
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PACKAGE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+COMMAND="${1:-}"
+
+if [ "$COMMAND" = "src" ]; then
   deploydir="deploy-preview"
 else
-  deploydir="deploy/oas"
+  deploydir="deploy/$SPEC_SLUG"
 fi
 
 mkdir -p $deploydir/js
 mkdir -p $deploydir/temp
-cp -p node_modules/respec/builds/respec-w3c.* $deploydir/js/
+# Find respec via Node.js module resolution so it works in both standalone
+# and npm workspace setups (where it may be hoisted above the CWD).
+RESPEC_DIR="$PACKAGE_DIR/node_modules/respec"
+cp -p "$RESPEC_DIR/builds/respec-w3c."* "$deploydir/js/"
 
-latest=$(git describe --abbrev=0 --tags)
+latest=$(git describe --abbrev=0 --tags 2>/dev/null || echo "")
 
-allVersions=$(ls -1 versions/[23456789].*.md | grep -v -e "\-editors" | sort -r)
-
-if [ -z "$1" ]; then
-  specifications=$allVersions
-elif [ "$1" = "latest" ]; then
-  specifications=$(ls -1 versions/$latest.md)
-elif [ "$1" = "src" ]; then
-  specifications="src/oas.md"
+if compgen -G "versions/[23456789].*.md" > /dev/null; then
+  allVersions=$(ls -1 versions/[23456789].*.md | grep -v -e "\-editors" | sort -r)
 else
-  specifications=$(ls -1 versions/$1.md)
+  allVersions=""
+fi
+
+if [ -z "$COMMAND" ]; then
+  specifications=$allVersions
+elif [ "$COMMAND" = "latest" ]; then
+  if [ -z "$latest" ]; then echo "Error: no git tags found"; exit 1; fi
+  specifications=$(ls -1 versions/$latest.md)
+elif [ "$COMMAND" = "src" ]; then
+  specifications="src/$SPEC_SRC"
+else
+  specifications=$(ls -1 versions/$COMMAND.md)
 fi
 
 latestCopied="none"
@@ -42,7 +72,7 @@ lastMinor="-"
 for specification in $specifications; do
   version=$(basename $specification .md)
 
-  if [ "$1" = "src" ]; then
+  if [ "$COMMAND" = "src" ]; then
     destination="$deploydir/$version.html"
     maintainers="EDITORS.md"
   else
@@ -56,8 +86,8 @@ for specification in $specifications; do
 
   echo === Building $version to $destination
 
-  node scripts/md2html/md2html.js --maintainers $maintainers $specification "$allVersions" > $tempfile
-  npx respec --no-sandbox --use-local --src $tempfile --out $tempfile2
+  node "$SCRIPT_DIR/md2html.js" --spec-config "$CONFIG_FILE" --maintainers "$maintainers" "$specification" "$allVersions" > "$tempfile"
+  "$PACKAGE_DIR/node_modules/.bin/respec" --no-sandbox --use-local --src $tempfile --out $tempfile2
   # remove unwanted Google Tag Manager and Google Analytics scripts
   sed -e 's/<script type="text\/javascript" async="" src="https:\/\/www.google-analytics.com\/analytics.js"><\/script>//' \
       -e 's/<script type="text\/javascript" async="" src="https:\/\/www.googletagmanager.com\/gtag\/js?id=G-[^"]*"><\/script>//' \
@@ -65,7 +95,7 @@ for specification in $specifications; do
 
   echo === Built $destination
 
-  if [ $version = $latest ]; then
+  if [ -n "$latest" ] && [ $version = $latest ]; then
     if [[ ${version} != *"rc"* ]]; then
       # version is not a Release Candidate
       ln -sf $(basename $destination) $deploydir/latest.html
@@ -73,7 +103,7 @@ for specification in $specifications; do
     fi
   fi
 
-  if [ ${minorVersion} != ${lastMinor} ] && [[ ${minorVersion} =~ ^[3-9] ]]; then
+  if [ "$COMMAND" != "src" ] && [ ${minorVersion} != ${lastMinor} ] && [[ ${minorVersion} =~ ^[3-9] ]]; then
     ln -sf $(basename $destination) $deploydir/v$minorVersion.html
     lastMinor=$minorVersion
   fi

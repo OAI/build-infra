@@ -147,9 +147,29 @@ let argv = require('yargs')(process.argv.slice(2))
     .string('maintainers')
     .alias('m','maintainers')
     .describe('maintainers','path to MAINTAINERS.md')
+    .string('spec-config')
+    .alias('c','spec-config')
+    .describe('spec-config','path to spec.config.json')
     .demandCommand(1)
     .parse();
-const abstract = 'What is the OpenAPI Specification?';
+
+let specConfig = {};
+if (argv['spec-config']) {
+    specConfig = JSON.parse(fs.readFileSync(argv['spec-config'], 'utf8'));
+}
+
+const slug = specConfig.slug || 'spec';
+const shortName = specConfig.shortName || slug.toUpperCase();
+const titleName = specConfig.titleName || shortName;
+const abstractQuestion = specConfig.abstractQuestion || `What is the ${shortName}?`;
+const abstractText = specConfig.abstractText || '';
+const metaDescription = specConfig.metaDescription || abstractText;
+const copyright = specConfig.copyright || 'the Linux Foundation';
+const edDraftURI = specConfig.edDraftURI || '';
+const logo = specConfig.logo || null;
+const participateLinks = specConfig.participateLinks || [];
+const titleSuffix = specConfig.titleSuffix || '';
+
 let maintainers = [];
 let emeritus = [];
 
@@ -170,67 +190,54 @@ const md = require('markdown-it')({
 });
 
 function preface(title,options) {
-    const otherVersions = options._[1].split("\n").map(v => path.basename(v,'.md')).filter(v => v !== options.subtitle);
+    const otherVersions = options._[1]
+        ? options._[1].split("\n").map(v => path.basename(v,'.md')).filter(v => v !== options.subtitle)
+        : [];
+
+    const otherLinks = [];
+    if (otherVersions.length > 0) {
+        otherLinks.push({
+            key: "Other versions:",
+            data: otherVersions.map(v => ({
+                href: `https://spec.openapis.org/${slug}/v${v}.html`
+            }))
+        });
+    }
+    if (participateLinks.length > 0) {
+        otherLinks.push({ key: "Participate", data: participateLinks });
+    }
+
     const respec = {
         specStatus: "base",
-        latestVersion: "https://spec.openapis.org/oas/latest.html",
-        thisVersion: `https://spec.openapis.org/oas/v${options.subtitle}.html`,
-        canonicalURI: `https://spec.openapis.org/oas/v${options.subtitle}.html`,
+        latestVersion: `https://spec.openapis.org/${slug}/latest.html`,
+        thisVersion: `https://spec.openapis.org/${slug}/v${options.subtitle}.html`,
+        canonicalURI: `https://spec.openapis.org/${slug}/v${options.subtitle}.html`,
         editors: maintainers,
         formerEditors: emeritus,
         publishDate: options.publishDate,
         subtitle: 'Version '+options.subtitle,
-        edDraftURI: "https://github.com/OAI/OpenAPI-Specification/",
-        shortName: "OAS",
+        edDraftURI: edDraftURI,
+        shortName: shortName,
         historyURI: null, // prevent ReSpec from fetching a W3C history based on the shortName
         lint: false,
-        logos:[{
-            src: "https://raw.githubusercontent.com/OAI/OpenAPI-Style-Guide/master/graphics/bitmap/OpenAPI_Logo_Pantone.png",
-            alt: "OpenAPI Initiative",
-            height: 48,
-            url: "https://openapis.org/"}],
-        otherLinks: [
-            {
-                key: "Other versions:",
-                data: otherVersions.map(v => {
-                    return {
-                        href: `https://spec.openapis.org/oas/v${v}.html`
-                    }
-                })
-            },
-            {
-                key: "Participate",
-                data: [
-                    {
-                        value: "GitHub OAI/OpenAPI-Specification",
-                        href: "https://github.com/OAI/OpenAPI-Specification/",
-                    },
-                    {
-                        value: "File a bug",
-                        href: "https://github.com/OAI/OpenAPI-Specification/issues",
-                    },
-                    {
-                        value: "Commit history",
-                        href: `https://github.com/OAI/OpenAPI-Specification/commits/main/versions/${options.subtitle}.md`,
-                    },
-                    {
-                        value: "Pull requests",
-                        href: "https://github.com/OAI/OpenAPI-Specification/pulls",
-                    },
-                ],
-            },
-        ],
+        ...(logo ? { logos: [logo] } : {}),
+        otherLinks: otherLinks,
         // localBiblio: {
         //     // add local bibliography entries here, add them to https://www.specref.org/, and remove them here once published
         // }
     };
 
     let preface = '<!DOCTYPE html><html lang="en"><head>\n'
-    preface += fs.readFileSync(path.resolve(__dirname,'./analytics/google.html'),'utf8');
+    const analyticsPath = path.resolve(__dirname,'./analytics/google.html');
+    if (fs.existsSync(analyticsPath)) {
+        preface += fs.readFileSync(analyticsPath,'utf8');
+    }
 
     // SEO
     preface += `<meta charset="UTF-8">\n<title>${md.utils.escapeHtml(title)}</title>`;
-    preface += '<meta name="description" content="The OpenAPI Specification (OAS) defines a standard, programming language-agnostic interface description for HTTP APIs.">\n';
+    if (metaDescription) {
+        preface += `<meta name="description" content="${md.utils.escapeHtml(metaDescription)}">\n`;
+    }
 
     // ReSpec
     preface += '<meta name="color-scheme" content="light dark">';
@@ -242,10 +249,12 @@ function preface(title,options) {
     preface += fs.readFileSync(path.resolve(__dirname,'gist.css'),'utf8').split(/\r?\n/).join(' ');
     preface += '</style>';
     preface += `<h1 id="title">${title.split('|')[0]}</h1>`;
-    preface += `<p class="copyright">Copyright © ${options.publishDate.getFullYear()} the Linux Foundation</p>`;
-    preface += `<section class="notoc" id="abstract"><h2>${abstract}</h2>`;
-    preface += 'The OpenAPI Specification (OAS) defines a standard, programming language-agnostic interface description for HTTP APIs, which allows both humans and computers to discover and understand the capabilities of a service without requiring access to source code, additional documentation, or inspection of network traffic. When properly defined via OpenAPI, a consumer can understand and interact with the remote service with a minimal amount of implementation logic. Similar to what interface descriptions have done for lower-level programming, the OpenAPI Specification removes guesswork in calling a service.';
-    preface += '</section>';
+    preface += `<p class="copyright">Copyright © ${options.publishDate.getFullYear()} ${copyright}</p>`;
+    if (abstractQuestion) {
+        preface += `<section class="notoc" id="abstract"><h2>${abstractQuestion}</h2>`;
+        preface += abstractText;
+        preface += '</section>';
+    }
     preface += '<section class="override" id="sotd" data-max-toc="0">';
     preface += '<h2>Status of This Document</h2>';
     preface += 'The source-of-truth for this specification is the HTML file referenced above as <em>This version</em>.';
@@ -406,7 +415,7 @@ for (let l in lines) {
         const regExp = /\((\.\.[^)]+)\)/g;
         line = line.replace(regExp,function(match,group1){
           console.warn('relative link',group1);
-          return '('+url.resolve('https://github.com/OAI/OpenAPI-Specification/tree/main/versions/foo',group1)+')';
+          return '('+url.resolve(edDraftURI+'tree/main/versions/foo',group1)+')';
         });
     }
 
@@ -483,7 +492,11 @@ for (let l in lines) {
     lines[l] = line;
 }
 
-s = preface(`OpenAPI Specification v${argv.subtitle} | Introduction, Definitions, & More`,argv)+'\n\n'+lines.join('\n');
+const titleText = titleSuffix
+    ? `${titleName} v${argv.subtitle} ${titleSuffix}`
+    : `${titleName} v${argv.subtitle}`;
+
+s = preface(titleText,argv)+'\n\n'+lines.join('\n');
 let out = md.render(s);
 out = out.replace(/\[([RGB])\]/g,'&#91;$1&#93;');
 out = out.replace('[[IANA-HTTP-AUTHSCHEMES]]','[[IANA-HTTP-AUTHSCHEMES|IANA Authentication Scheme registry]]');

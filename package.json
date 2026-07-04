@@ -1,0 +1,71 @@
+{
+  "name": "@oai/build-infra",
+  "version": "0.0.0",
+  "description": "OpenAPI Initiative specification build and test infrastructure",
+  "author": {
+    "name": "OpenAPI Initiative TSC",
+    "email": "tsc@openapis.org",
+    "url": "https://openapis.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OAI/build-infra.git"
+  },
+  "license": "Apache-2.0",
+  "bin": {
+    "oai-spec-build": "./bin/oai-spec-build",
+    "oai-spec-format-markdown": "./bin/oai-spec-format-markdown",
+    "oai-spec-publish-schemas": "./bin/oai-spec-publish-schemas",
+    "oai-spec-validate-markdown": "./bin/oai-spec-validate-markdown"
+  },
+  "exports": {
+    "./package.json": "./package.json",
+    "./configs/linkspector.yml": "./configs/linkspector.yml",
+    "./configs/markdownlint-root.yaml": "./configs/markdownlint-root.yaml",
+    "./configs/markdownlint-spec.yaml": "./configs/markdownlint-spec.yaml",
+    "./schema/test-config": "./src/schema/test-config.mjs",
+    "./vitest-config": "./src/vitest-config.mjs"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.2.0",
+    "yargs": "^18.0.0"
+  },
+  "peerDependencies": {
+    "@hyperjump/browser": "^1.0.0",
+    "@hyperjump/json-schema": "^1.0.0",
+    "@hyperjump/json-schema-coverage": "^1.2.1",
+    "@umbrelladocs/linkspector": "^0.5.3",
+    "@vitest/coverage-v8": "^4.0.0",
+    "c8": "^11.0.0",
+    "content-type": "^1.0.0",
+    "markdownlint-cli2": "^0.22.0",
+    "respec": "^37.0.0",
+    "vitest": "^4.0.0",
+    "yaml": "^2.0.0"
+  },
+  "devDependencies": {
+    "@hyperjump/browser": "^1.0.0",
+    "@hyperjump/json-schema": "^1.0.0",
+    "@hyperjump/json-schema-coverage": "^1.2.1",
+    "@umbrelladocs/linkspector": "^0.5.3",
+    "@vitest/coverage-v8": "^4.1.9",
+    "c8": "^11.0.0",
+    "content-type": "^1.0.0",
+    "markdownlint-cli2": "^0.22.1",
+    "respec": "37.1.0",
+    "vitest": "^4.0.1",
+    "yaml": "^2.9.0"
+  },
+  "keywords": [
+    "OpenAPI",
+    "OAI",
+    "specification",
+    "schema",
+    "infrastructure"
+  ]
+}

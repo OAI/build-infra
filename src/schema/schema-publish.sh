@@ -1,22 +1,45 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 # Author: @ralfhandl
 
 # Run this script from the root of the repo. It is designed to be run by a GitHub workflow.
+#
+# Optional environment variables:
+#   SPEC_CONFIG path to the spec config file, default: spec.config.json
+#   SPEC_SLUG   short identifier used in deploy paths, e.g. "oas", "overlay", "lifecycle"
+#
+# The list of schemas to publish is read from spec.config.json under the "schemas" key.
+# Default if not specified: ["schema.yaml"]
+# OAS additionally uses: ["meta.yaml", "dialect.yaml", "schema.yaml", "schema-base.yaml"]
+
+CONFIG_FILE="${SPEC_CONFIG:-spec.config.json}"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+  echo "Error: $CONFIG_FILE not found"
+  exit 1
+fi
+
+SPEC_SLUG="${SPEC_SLUG:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.slug || 'spec')")}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PACKAGE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+YAML_BIN="$PACKAGE_DIR/node_modules/.bin/yaml"
 
 schemaDir="src/schemas/validation"
 branch=$(git branch --show-current)
 
 
-if [ -z "$1" ]; then
+COMMAND="${1:-}"
+
+if [ -z "$COMMAND" ]; then
   if [[ $branch =~ ^v([0-9]+\.[0-9]+)-dev$ ]]; then
     version="${BASH_REMATCH[1]}"
-    deploydir="./deploy/oas/${version}"
+    deploydir="./deploy/$SPEC_SLUG/${version}"
   else
     echo "Unable to determine version from branch name; should be vX.Y-dev"
     exit 1
   fi
-elif [ $1 = "src" ]; then
+elif [ "$COMMAND" = "src" ]; then
   deploydir="./deploy-preview"
 else
   echo "Unrecognized argument"
@@ -35,7 +58,7 @@ publish_schema() {
   mkdir -p $deploydir/$base
 
   # replace the WORK-IN-PROGRESS placeholders
-  sed ${sedCmd[@]} $schemaDir/$schema | npx yaml --json --indent 2 --single > $target
+  sed ${sedCmd[@]} $schemaDir/$schema | "$YAML_BIN" --json --indent 2 --single > $target
 
   # find the jekyll lander markdown file
   local jekyllLander=$(find "$deploydir/$base" -maxdepth 1 -name "*.md")
@@ -68,14 +91,25 @@ publish_schema() {
 echo === Building schemas into $deploydir
 
 # list of schemas to process, dependent schemas come first
-schemas=(meta.yaml dialect.yaml schema.yaml schema-base.yaml)
+# read from spec.config.json if present, otherwise default to schema.yaml only
+schemas=()
+if [ -f "$CONFIG_FILE" ]; then
+  while IFS= read -r line; do
+    schemas+=("$line")
+  done < <(node -e "const c=require('./$CONFIG_FILE'); console.log((c.schemas||['schema.yaml']).join('\n'))")
+else
+  schemas=(schema.yaml)
+fi
 
 # publish each schema using its or any of its dependencies newest commit date
 maxDate=""
 sedCmds=()
 for schema in "${schemas[@]}"; do
   if [ -f  "$schemaDir/$schema" ]; then
-    newestCommitDate=$(git log -1 --format="%cd" --date=short "$schemaDir/$schema")
+    newestCommitDate=$(git log -1 --format="%cd" --date=short "$schemaDir/$schema" || true)
+    if [ -z "$newestCommitDate" ]; then
+      newestCommitDate=$(date +%F)
+    fi
 
     # the newest date across a schema and all its dependencies is its date stamp
     if [ "$newestCommitDate" \> "$maxDate" ]; then

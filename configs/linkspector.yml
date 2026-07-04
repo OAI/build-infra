@@ -1,3 +1,5 @@
+# Template linkspector config for OAI specification repos.
+# Copy to the consumer repo root as .linkspector.yml and adjust the files list.
 files:
   - src/oas.md
   - CONTRIBUTING.md
@@ -13,6 +15,3 @@ files:
 ignorePatterns:
   - pattern: 'clientdomain.com'
   - pattern: 'example.org'
-  - pattern: 'https://www.w3.org/TR/xml-names11/'
-  - pattern: 'https://www.npmjs.com/package/markdownlint'
-  - pattern: 'https://www.merriam-webster.com/dictionary/'

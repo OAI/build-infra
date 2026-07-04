@@ -1,0 +1,14 @@
+$schema: 'https://json-schema.org/draft/2020-12/schema'
+$id: 'https://spec.openapis.org/myspec/1.0/schema/WORK-IN-PROGRESS'
+title: MySpec Schema
+description: Validates a MySpec document.
+type: object
+required:
+  - myspec
+properties:
+  myspec:
+    description: The version of the MySpec Specification being used.
+    type: string
+    enum:
+      - '1.0.0'
+additionalProperties: true
