@@ -41,6 +41,7 @@ if [ -z "$COMMAND" ]; then
     exit 1
   fi
 elif [ "$COMMAND" = "src" ]; then
+  version="deploy-preview"
   deploydir="./deploy-preview"
 else
   echo "Unrecognized argument"
