@@ -12,6 +12,7 @@ describe("package exports", () => {
     expect(testHelpers.expect).toBeTypeOf("function");
     expect(testConfig.createTestConfig).toBeTypeOf("function");
     expect(schemaVitest.registerSchema).toBeTypeOf("function");
+    expect(schemaVitest.toMatchJsonSchema).toBeTypeOf("function");
     expect(openApi30.validate).toBeTypeOf("function");
     expect(openApi30.YAML).toBeTypeOf("object");
     expect(vitestConfig.createVitestConfig).toBeTypeOf("function");

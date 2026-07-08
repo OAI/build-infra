@@ -27,6 +27,8 @@ fi
 
 SPEC_SLUG="${SPEC_SLUG:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.slug || 'spec')")}"
 SPEC_SRC="${SPEC_SRC:-$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.specSrc || 'spec.md')")}"
+SOURCE_MAINTAINERS="$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.sourceMaintainersPath || c.maintainersPath || 'EDITORS.md')")"
+PUBLISHED_MAINTAINERS="$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.publishedMaintainersPath || '')")"
 
 # resolve md2html.js relative to this script regardless of CWD
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -51,8 +53,8 @@ cp -p "$RESPEC_DIR/builds/respec-w3c."* "$deploydir/js/"
 
 latest=$(git describe --abbrev=0 --tags 2>/dev/null || echo "")
 
-if compgen -G "versions/[23456789].*.md" > /dev/null; then
-  allVersions=$(ls -1 versions/[23456789].*.md | grep -v -e "\-editors" | sort -r)
+if compgen -G "versions/[0-9]*.[0-9]*.[0-9]*.md" > /dev/null; then
+  allVersions=$(ls -1 versions/[0-9]*.[0-9]*.[0-9]*.md | grep -v -e "\-editors" | sort -r)
 else
   allVersions=""
 fi
@@ -76,13 +78,17 @@ for specification in $specifications; do
 
   if [ "$COMMAND" = "src" ]; then
     destination="$deploydir/$version.html"
-    maintainers="EDITORS.md"
+    maintainers="$SOURCE_MAINTAINERS"
   else
     destination="$deploydir/v$version.html"
-    maintainers="$(dirname $specification)/$version-editors.md"
+    if [ -n "$PUBLISHED_MAINTAINERS" ]; then
+      maintainers="$PUBLISHED_MAINTAINERS"
+    else
+      maintainers="$(dirname $specification)/$version-editors.md"
+    fi
   fi
 
-  minorVersion=${version:0:3}
+  minorVersion=$(echo "$version" | sed -E 's/^([0-9]+\.[0-9]+)\..*$/\1/')
   tempfile="$deploydir/temp/$version.html"
   tempfile2="$deploydir/temp/$version-2.html"
 
@@ -105,8 +111,8 @@ for specification in $specifications; do
     fi
   fi
 
-  if [ "$COMMAND" != "src" ] && [ ${minorVersion} != ${lastMinor} ] && [[ ${minorVersion} =~ ^[3-9] ]]; then
-    ln -sf $(basename $destination) $deploydir/v$minorVersion.html
+  if [ "$COMMAND" != "src" ] && [ "$minorVersion" != "$lastMinor" ]; then
+    ln -sf $(basename "$destination") "$deploydir/v$minorVersion.html"
     lastMinor=$minorVersion
   fi
 done

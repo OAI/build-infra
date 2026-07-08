@@ -1,1 +1,4 @@
-export { registerSchema } from "@hyperjump/json-schema-coverage/vitest";
+export {
+  registerSchema,
+  toMatchJsonSchema
+} from "@hyperjump/json-schema-coverage/vitest";

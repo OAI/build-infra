@@ -46,6 +46,8 @@ The tools assume the same broad layout in every specification repository:
 
 Not every repository needs every path. For example, a specification without
 schemas does not need schema tests or `oai-spec-publish-schemas`.
+Repositories that keep maintainers in a different file, such as
+`MAINTAINERS.md`, can configure that in `spec.config.json`.
 
 ## Adding This To A Specification Repository
 
@@ -173,6 +175,13 @@ Common fields:
 | `schemas` | YAML schema filenames under `src/schemas/validation/`, in dependency order. |
 | `edDraftURI` | GitHub URL for the repository. |
 | `participateLinks` | Links shown in generated HTML. |
+| `maintainersPath` | Maintainer/editor Markdown file to use when both source and published builds share one file. |
+| `sourceMaintainersPath` | Maintainer/editor Markdown file for `oai-spec-build src`; defaults to `maintainersPath`, then `EDITORS.md`. |
+| `publishedMaintainersPath` | Maintainer/editor Markdown file for published `versions/*.md` builds; defaults to `versions/X.Y.Z-editors.md`. |
+
+Published builds discover `versions/X.Y.Z.md` files for any numeric major
+version, including `1.x` specifications. For each minor version, the newest
+published patch also gets a `vX.Y.html` alias.
 
 Release-related fields live under `release`:
 
@@ -226,6 +235,62 @@ For a new minor release branch, create the new `vX.Y-dev` branch first and then
 run `npm run start-release` there. If schema version rewriting is enabled, the
 command updates configured schema and test files from the previous minor version
 to the new minor version.
+
+## Schema Test Setup
+
+Repositories with one standard JSON Schema 2020-12 schema can keep their test
+files very small. A typical `vitest.config.mjs` is:
+
+```js
+export { default } from "@oai/build-infra/vitest-config";
+```
+
+A typical `tests/schema/setup.mjs` is:
+
+```js
+import { createTestConfig } from "@oai/build-infra/schema/test-config";
+
+export default createTestConfig();
+```
+
+The schema test itself can import Vitest and the coverage-aware schema matcher
+from build-infra. Use the `$id` URI from the YAML schema as `schemaUri`.
+
+```js
+import { readdirSync, readFileSync } from "node:fs";
+import YAML from "yaml";
+import { registerSchema, toMatchJsonSchema } from "@oai/build-infra/schema/vitest";
+import { describe, expect, test } from "@oai/build-infra/test";
+
+expect.extend({ toMatchJsonSchema });
+
+const schemaUri = "https://spec.openapis.org/example/1.0/schema/WORK-IN-PROGRESS";
+await registerSchema("./src/schemas/validation/schema.yaml");
+
+describe("schema", () => {
+  for (const entry of readdirSync("tests/schema/pass", { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".yaml")) continue;
+
+    test(`pass/${entry.name}`, async () => {
+      const document = YAML.parse(readFileSync(`tests/schema/pass/${entry.name}`, "utf8"));
+      await expect(document).toMatchJsonSchema(schemaUri);
+    });
+  }
+
+  for (const entry of readdirSync("tests/schema/fail", { withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith(".yaml")) continue;
+
+    test(`fail/${entry.name}`, async () => {
+      const document = YAML.parse(readFileSync(`tests/schema/fail/${entry.name}`, "utf8"));
+      await expect(document).not.toMatchJsonSchema(schemaUri);
+    });
+  }
+});
+```
+
+OAS-style repositories that need custom vocabulary registration can pass
+`vocabularyKeywords` to `createTestConfig`; see the comments in
+`src/schema/test-config.mjs`.
 
 ## Local Development
 
