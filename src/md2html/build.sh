@@ -33,6 +33,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$PACKAGE_DIR/src/shell/bin-utils.sh"
 RESPEC_BIN="$(resolve_node_bin respec "$PACKAGE_DIR")"
+RESPEC_DIR="$(resolve_node_package_dir respec "$PACKAGE_DIR")"
 
 COMMAND="${1:-}"
 
@@ -46,7 +47,6 @@ mkdir -p $deploydir/js
 mkdir -p $deploydir/temp
 # Find respec via Node.js module resolution so it works in both standalone
 # and npm workspace setups (where it may be hoisted above the CWD).
-RESPEC_DIR="$PACKAGE_DIR/node_modules/respec"
 cp -p "$RESPEC_DIR/builds/respec-w3c."* "$deploydir/js/"
 
 latest=$(git describe --abbrev=0 --tags 2>/dev/null || echo "")

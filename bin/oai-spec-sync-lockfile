@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import { syncConsumerLockfile } from "../src/lockfile/sync-consumer-lockfile.mjs";
+
+syncConsumerLockfile(process.argv.slice(2));

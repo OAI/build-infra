@@ -17,6 +17,7 @@ The package installs these command line tools:
 | `oai-spec-format-markdown` | Formats Markdown files with the shared Markdown rules. |
 | `oai-spec-validate-markdown` | Runs Markdown linting and link checks. |
 | `oai-spec-publish-schemas` | Converts YAML schemas under `src/schemas/validation/` into dated JSON schema iterations for the spec site. |
+| `oai-spec-sync-lockfile` | Repairs a consumer repository lockfile by syncing build-infra's verified transitive dependency tree. |
 | `oai-spec-test` | Runs Vitest and JSON Schema coverage with the shared test dependencies. |
 | `oai-spec-start-release` | Starts the next `vX.Y-dev-start-X.Y.Z` release-preparation branch. |
 | `oai-spec-adjust-release-branch` | Prepares a `vX.Y.Z-rel` branch for merge to `main`. |
@@ -145,6 +146,18 @@ If it reports missing or invalid transitive packages, the lockfile is incomplete
 fix the lockfile and re-run `npm ci` rather than changing CI to use
 `npm install`.
 
+If a consumer repository's only npm dependency is `@oai/build-infra`, the
+maintainer can usually repair an incomplete lockfile with:
+
+```sh
+oai-spec-sync-lockfile
+npm ci
+```
+
+The command keeps the consumer repository's root package and resolved
+`@oai/build-infra` commit, then syncs the transitive dependency entries from the
+installed build-infra package lockfile.
+
 ## `spec.config.json`
 
 The shared tools read `spec.config.json` from the repository root.
@@ -226,6 +239,26 @@ npm test
 `npm test` runs self-contained tests. Some tests create temporary fixture
 specification repositories and local Git remotes so release-command behavior can
 be checked without a separate consumer repository.
+
+## Testing Strategy
+
+The tests are meant to document normal operation as much as they prevent
+regressions. Useful examples:
+
+| Test file | What it documents |
+| --------- | ----------------- |
+| `tests/consumer/installed-package.test.mjs` | How the public command line tools behave when build-infra is installed in a consumer repository and npm hoists dependencies to the consumer's top-level `node_modules`. |
+| `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
+| `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
+| `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
+| `tests/package/package-lock.test.mjs` | Lockfile entries that must exist for `npm ci` on GitHub-hosted Linux runners. |
+| `tests/lockfile/sync-consumer-lockfile.test.mjs` | How `oai-spec-sync-lockfile` repairs a consumer lockfile while preserving the resolved build-infra commit. |
+| `tests/package/exports.test.mjs` | Public helper modules that consumer test suites can import. |
+
+When adding behavior to build-infra, prefer adding or extending one of these
+consumer-shaped fixture tests. A test that runs without any checked-out
+specification repository is much easier for future maintainers to trust and run
+locally.
 
 To test changes in a specification repository before pushing build-infra, use a
 temporary local dependency in that repository:

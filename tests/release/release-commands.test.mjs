@@ -92,6 +92,58 @@ describe("release command behavior in fixture repositories", () => {
     expect(existsSync(join(repo, "tests/schema/fail"))).toBe(false);
     expect(existsSync(join(repo, "tests/schema/schema.test.mjs"))).toBe(false);
   });
+
+  test("start-release fails outside a development branch", async () => {
+    const { repo } = await createFixtureRepository({
+      mainSpecVersion: "1.0.0",
+      devBranch: "v1.0-dev"
+    });
+
+    runGit(repo, ["switch", "main"]);
+
+    expect(() => runNode(repo, [startReleaseBin, "--no-push"])).toThrow(
+      /intended to be run from a development branch/
+    );
+  });
+
+  test("release commands require a clean worktree", async () => {
+    const { repo } = await createFixtureRepository({
+      mainSpecVersion: "1.0.0",
+      devBranch: "v1.0-dev"
+    });
+
+    runGit(repo, ["switch", "v1.0-dev"]);
+    writeFileSync(join(repo, "UNCOMMITTED.md"), "# local edit\n");
+
+    expect(() => runNode(repo, [startReleaseBin, "--no-push"])).toThrow(
+      /Working tree must be clean/
+    );
+  });
+
+  test("start-release fails when main has no published versions", async () => {
+    const { repo } = await createFixtureRepositoryWithoutPublishedVersions("v1.0-dev");
+
+    runGit(repo, ["switch", "v1.0-dev"]);
+
+    expect(() => runNode(repo, [startReleaseBin, "--no-push"])).toThrow(
+      /Could not find any published specification version/
+    );
+  });
+
+  test("start-release refuses to reuse an existing remote PR branch", async () => {
+    const { repo } = await createFixtureRepository({
+      mainSpecVersion: "1.0.0",
+      devBranch: "v1.0-dev"
+    });
+
+    runGit(repo, ["switch", "-c", "v1.0-dev-start-1.0.1"]);
+    runGit(repo, ["push", "-u", "origin", "v1.0-dev-start-1.0.1"]);
+    runGit(repo, ["switch", "v1.0-dev"]);
+
+    expect(() => runNode(repo, [startReleaseBin, "--no-push"])).toThrow(
+      /PR branch v1\.0-dev-start-1\.0\.1 already exists/
+    );
+  });
 });
 
 async function createFixtureRepository({ mainSpecVersion, devBranch, schemaText }) {
@@ -117,6 +169,32 @@ async function createFixtureRepository({ mainSpecVersion, devBranch, schemaText 
   writeFileSync(join(repo, "src/spec.md"), fixtureSpec(mainSpecVersion));
   runGit(repo, ["add", "src/spec.md"]);
   runGit(repo, ["commit", "--allow-empty", "-m", "start development branch"]);
+
+  return { repo, remote };
+}
+
+async function createFixtureRepositoryWithoutPublishedVersions(devBranch) {
+  const root = mkdtempSync(join(tmpdir(), "oai-build-infra-test-"));
+  testDirs.push(root);
+
+  const remote = join(root, "remote.git");
+  const repo = join(root, "consumer");
+
+  runGit(root, ["init", "--bare", remote]);
+  runGit(root, ["init", repo]);
+  runGit(repo, ["branch", "-M", "main"]);
+  runGit(repo, ["config", "user.name", "Fixture Maintainer"]);
+  runGit(repo, ["config", "user.email", "fixture@example.com"]);
+  runGit(repo, ["remote", "add", "origin", remote]);
+
+  await mkdir(join(repo, "src"), { recursive: true });
+  writeFileSync(join(repo, "spec.config.json"), JSON.stringify(fixtureConfig(), null, 2) + "\n");
+  writeFileSync(join(repo, "src/spec.md"), fixtureSpec("1.0.0"));
+  writeFileSync(join(repo, "EDITORS.md"), "# Editors\n");
+  runGit(repo, ["add", "."]);
+  runGit(repo, ["commit", "-m", "initial repository"]);
+  runGit(repo, ["push", "-u", "origin", "main"]);
+  runGit(repo, ["switch", "-c", devBranch]);
 
   return { repo, remote };
 }
@@ -185,11 +263,16 @@ function fixtureSpec(version, releaseType = "Release") {
 }
 
 function runNode(cwd, args) {
-  return execFileSync(process.execPath, args, {
-    cwd,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"]
-  }).trimEnd();
+  try {
+    return execFileSync(process.execPath, args, {
+      cwd,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    }).trimEnd();
+  } catch (error) {
+    const output = `${error.stdout || ""}${error.stderr || ""}`;
+    throw new Error(output || error.message);
+  }
 }
 
 function runGit(cwd, args) {

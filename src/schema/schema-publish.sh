@@ -75,10 +75,14 @@ publish_schema() {
     fi
   else
     # find the most recent preceding version
-    local lastdir=""; for fn in $(dirname $deploydir)/?.?; do test "$fn" "<" "$deploydir" && lastdir="$fn"; done
-    local lastVersion=$(basename $lastdir)
+    local lastdir=""; for fn in $(dirname $deploydir)/?.?; do [ -d "$fn" ] && test "$fn" "<" "$deploydir" && lastdir="$fn"; done
+    local lastVersion=""
+    local lastLander=""
     # find the jekyll lander markdown file for the preceding version
-    local lastLander=$(find "$lastdir/$base" -maxdepth 1 -name "*.md" 2>/dev/null)
+    if [ -n "$lastdir" ]; then
+      lastVersion=$(basename $lastdir)
+      lastLander=$(find "$lastdir/$base" -maxdepth 1 -name "*.md" 2>/dev/null)
+    fi
 
     if [ ! -z "$lastLander" ]; then
       # copy and adjust the lander file from the preceding version
