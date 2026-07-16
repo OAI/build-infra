@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import { startRelease } from "../src/release/start-release.mjs";
+
+await startRelease(process.argv.slice(2));

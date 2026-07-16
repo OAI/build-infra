@@ -1,0 +1,23 @@
+{
+  "slug": "myextension",
+  "shortName": "MyExtension",
+  "specSrc": "spec.md",
+  "abstractQuestion": "What is the MyExtension Specification?",
+  "abstractText": "The MyExtension Specification defines the syntax and semantics of the MyExtension Object, which extends the OpenAPI Specification via the <code>features</code> field.",
+  "metaDescription": "The MyExtension Specification defines the MyExtension Object, an extension to the OpenAPI Specification.",
+  "copyright": "the Linux Foundation",
+  "edDraftURI": "https://github.com/OAI/my-extension/",
+  "logo": {
+    "src": "https://raw.githubusercontent.com/OAI/OpenAPI-Style-Guide/master/graphics/bitmap/OpenAPI_Logo_Pantone.png",
+    "alt": "OpenAPI Initiative",
+    "height": 48,
+    "url": "https://openapis.org/"
+  },
+  "participateLinks": [
+    { "value": "GitHub OAI/my-extension", "href": "https://github.com/OAI/my-extension/" },
+    { "value": "File a bug", "href": "https://github.com/OAI/my-extension/issues" },
+    { "value": "Pull requests", "href": "https://github.com/OAI/my-extension/pulls" }
+  ],
+  "titleSuffix": "",
+  "schemas": ["schema.yaml"]
+}

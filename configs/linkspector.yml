@@ -1,0 +1,17 @@
+# Template linkspector config for OAI specification repos.
+# Copy to the consumer repo root as .linkspector.yml and adjust the files list.
+files:
+  - src/oas.md
+  - CONTRIBUTING.md
+  - EDITORS.md
+  - GOVERNANCE.md
+  - IMPLEMENTATIONS.md
+  - MAINTAINERS.md
+  - README.md
+  - SECURITY_CONSIDERATIONS.md
+  - SPECIAL_INTEREST_GROUPS.md
+  - style-guide.md
+  - TOB.md
+ignorePatterns:
+  - pattern: 'clientdomain.com'
+  - pattern: 'example.org'

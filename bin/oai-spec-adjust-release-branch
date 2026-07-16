@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import { adjustReleaseBranch } from "../src/release/adjust-release-branch.mjs";
+
+await adjustReleaseBranch(process.argv.slice(2));
