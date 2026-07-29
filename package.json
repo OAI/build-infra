@@ -40,7 +40,7 @@
     "@hyperjump/browser": "^1.0.0",
     "@hyperjump/json-schema": "^1.0.0",
     "@hyperjump/json-schema-coverage": "^1.2.1",
-    "@umbrelladocs/linkspector": "^0.5.3",
+    "@umbrelladocs/linkspector": "^0.5.6",
     "@vitest/coverage-v8": "^4.1.9",
     "cheerio": "^1.2.0",
     "c8": "^11.0.0",
@@ -48,7 +48,7 @@
     "highlight.js": "^11.11.1",
     "markdownlint-cli2": "^0.22.1",
     "markdown-it": "^14.2.0",
-    "respec": "37.1.0",
+    "respec": "37.2.0",
     "vitest": "^4.0.1",
     "yaml": "^2.9.0",
     "yargs": "^18.0.0"
