@@ -41,7 +41,7 @@
     "@hyperjump/json-schema": "^1.0.0",
     "@hyperjump/json-schema-coverage": "^1.2.1",
     "@umbrelladocs/linkspector": "^0.5.3",
-    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/coverage-v8": "^4.1.10",
     "cheerio": "^1.2.0",
     "c8": "^11.0.0",
     "content-type": "^1.0.0",
