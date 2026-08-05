@@ -43,6 +43,51 @@ describe("shell command bin resolution", () => {
     expect(output).toContain("linkspector check --config");
   });
 
+  test("validate-markdown preloads the linkspector no-sandbox shim in GitHub Actions", () => {
+    const { consumer, installedPackage, consumerBin } = createInstalledPackageFixture();
+
+    writeFileSync(join(consumer, "README.md"), "# Fixture\n");
+    writeFileSync(join(consumer, ".linkspector.yml"), "dirs:\n  - .\n");
+    writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
+    writeBin(join(consumerBin, "linkspector"), "echo NODE_OPTIONS=\"$NODE_OPTIONS\"\necho linkspector \"$@\"");
+
+    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-validate-markdown")], {
+      cwd: consumer,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GITHUB_ACTIONS: "true",
+        PATH: `${consumerBin}:${process.env.PATH}`
+      }
+    });
+
+    expect(output).toContain("linkspector-no-sandbox.cjs");
+    expect(output).toContain("linkspector check --config");
+  });
+
+  test("validate-markdown can disable the linkspector no-sandbox shim", () => {
+    const { consumer, installedPackage, consumerBin } = createInstalledPackageFixture();
+
+    writeFileSync(join(consumer, "README.md"), "# Fixture\n");
+    writeFileSync(join(consumer, ".linkspector.yml"), "dirs:\n  - .\n");
+    writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
+    writeBin(join(consumerBin, "linkspector"), "echo NODE_OPTIONS=\"$NODE_OPTIONS\"\necho linkspector \"$@\"");
+
+    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-validate-markdown")], {
+      cwd: consumer,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GITHUB_ACTIONS: "true",
+        OAI_BUILD_INFRA_LINKSPECTOR_NO_SANDBOX: "0",
+        PATH: `${consumerBin}:${process.env.PATH}`
+      }
+    });
+
+    expect(output).not.toContain("linkspector-no-sandbox.cjs");
+    expect(output).toContain("linkspector check --config");
+  });
+
   test("validate-markdown skips linkspector when no linkspector config exists", () => {
     const { consumer, installedPackage, consumerBin } = createInstalledPackageFixture();
 
