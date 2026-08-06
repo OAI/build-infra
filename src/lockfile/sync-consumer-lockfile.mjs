@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 
@@ -18,7 +18,8 @@ export function syncConsumerLockfile(args = []) {
 
   const requireFromConsumer = createRequire(`${dirname(lockfilePath)}/`);
   const buildInfraPackageJson = requireFromConsumer.resolve("@oai/build-infra/package.json");
-  const buildInfraLockfilePath = join(dirname(buildInfraPackageJson), "package-lock.json");
+  const buildInfraPackageDir = dirname(buildInfraPackageJson);
+  const buildInfraLockfilePath = findBuildInfraLockfile(buildInfraPackageDir);
   const buildInfraLock = JSON.parse(readFileSync(buildInfraLockfilePath, "utf8"));
 
   for (const [path, entry] of Object.entries(buildInfraLock.packages || {})) {
@@ -35,4 +36,21 @@ export function syncConsumerLockfile(args = []) {
   );
 
   writeFileSync(lockfilePath, JSON.stringify(consumerLock, null, 2) + "\n");
+}
+
+function findBuildInfraLockfile(buildInfraPackageDir) {
+  const candidates = [
+    join(buildInfraPackageDir, "package-lock.json"),
+    join(buildInfraPackageDir, "src/lockfile/build-infra-package-lock.json")
+  ];
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `Could not find build-infra lockfile. Checked: ${candidates.join(", ")}`
+  );
 }

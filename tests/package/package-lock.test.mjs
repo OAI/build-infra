@@ -8,6 +8,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(__dirname, "../..");
 const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 const lockfile = JSON.parse(readFileSync(join(packageRoot, "package-lock.json"), "utf8"));
+const packagedLockfile = JSON.parse(
+  readFileSync(join(packageRoot, "src/lockfile/build-infra-package-lock.json"), "utf8")
+);
 
 describe("package lockfile", () => {
   test("uses package-lock v3", () => {
@@ -16,5 +19,9 @@ describe("package lockfile", () => {
 
   test("records the package's direct runtime dependencies", () => {
     expect(lockfile.packages[""].dependencies).toEqual(packageJson.dependencies);
+  });
+
+  test("keeps the packaged lockfile snapshot in sync", () => {
+    expect(packagedLockfile).toEqual(lockfile);
   });
 });

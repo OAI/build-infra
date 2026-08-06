@@ -148,10 +148,22 @@ When setting up a new specification repository whose only npm dependency is
 `@oai/build-infra`, the consumer `package-lock.json` should contain the
 dependency tree needed by the resolved build-infra commit. If `npm ci` reports
 missing or invalid transitive packages after adding build-infra, compare the
-consumer lockfile with this repository's verified `package-lock.json` and make
-sure the consumer lockfile includes the same transitive package entries. This is
-especially important for optional dependencies, because those are where
-platform-specific lockfile gaps usually appear.
+consumer lockfile with this repository's verified `package-lock.json`, or run
+`oai-spec-sync-lockfile` in the consumer repository, and make sure the consumer
+lockfile includes the same transitive package entries. This is especially
+important for optional dependencies, because those are where platform-specific
+lockfile gaps usually appear.
+
+The sync helper uses the packaged snapshot at
+`src/lockfile/build-infra-package-lock.json` when build-infra is installed from
+GitHub. npm does not include the root `package-lock.json` in installed Git
+packages. Whenever `package-lock.json` changes in this repository, refresh that
+snapshot too:
+
+```sh
+cp package-lock.json src/lockfile/build-infra-package-lock.json
+npm test -- tests/package/package-lock.test.mjs
+```
 
 ## Release Command Maintenance
 
