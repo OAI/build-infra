@@ -16,6 +16,7 @@ SPEC_CONFIG_LINT="${OAI_BUILD_INFRA_SPEC_CONFIG:-$PACKAGE_DIR/configs/markdownli
 LINKSPECTOR_CONFIG="${OAI_BUILD_INFRA_LINKSPECTOR_CONFIG:-.linkspector.yml}"
 MARKDOWNLINT="$(resolve_node_bin markdownlint-cli2 "$PACKAGE_DIR")"
 LINKSPECTOR="$(resolve_node_bin linkspector "$PACKAGE_DIR")"
+LINKSPECTOR_NODE_OPTIONS="${NODE_OPTIONS:-}"
 
 if [ ! -f "$CONFIG_FILE" ]; then
   echo "Error: $CONFIG_FILE not found"
@@ -32,5 +33,9 @@ fi
 "$MARKDOWNLINT" --config "$ROOT_CONFIG" "*.md"
 
 if [ -f "$LINKSPECTOR_CONFIG" ]; then
-  "$LINKSPECTOR" check --config "$LINKSPECTOR_CONFIG"
+  if [ "${OAI_BUILD_INFRA_LINKSPECTOR_NO_SANDBOX:-}" = "1" ] || { [ "${GITHUB_ACTIONS:-}" = "true" ] && [ "${OAI_BUILD_INFRA_LINKSPECTOR_NO_SANDBOX:-}" != "0" ]; }; then
+    LINKSPECTOR_NODE_OPTIONS="${LINKSPECTOR_NODE_OPTIONS:+$LINKSPECTOR_NODE_OPTIONS }--require $PACKAGE_DIR/src/shell/linkspector-no-sandbox.cjs"
+  fi
+
+  NODE_OPTIONS="$LINKSPECTOR_NODE_OPTIONS" "$LINKSPECTOR" check --config "$LINKSPECTOR_CONFIG"
 fi
