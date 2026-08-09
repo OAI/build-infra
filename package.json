@@ -34,6 +34,7 @@
     "./vitest-config": "./src/vitest-config.mjs"
   },
   "scripts": {
+    "sync-lockfile-snapshot": "cp package-lock.json src/lockfile/build-infra-package-lock.json",
     "test": "vitest run"
   },
   "dependencies": {

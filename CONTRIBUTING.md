@@ -161,7 +161,7 @@ packages. Whenever `package-lock.json` changes in this repository, refresh that
 snapshot too:
 
 ```sh
-cp package-lock.json src/lockfile/build-infra-package-lock.json
+npm run sync-lockfile-snapshot
 npm test -- tests/package/package-lock.test.mjs
 ```
 
