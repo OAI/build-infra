@@ -158,7 +158,10 @@ npm ci
 
 The command keeps the consumer repository's root package and resolved
 `@oai/build-infra` commit, then syncs the transitive dependency entries from the
-installed build-infra package lockfile.
+installed build-infra package lockfile snapshot. npm does not include a package's
+root `package-lock.json` when it installs a Git dependency, so build-infra keeps
+a packaged copy at `src/lockfile/build-infra-package-lock.json`. The test suite
+checks that this snapshot matches the repository's root `package-lock.json`.
 
 ## `spec.config.json`
 
@@ -301,6 +304,14 @@ npm ci
 npm test
 ```
 
+When `package-lock.json` changes, refresh the packaged lockfile snapshot before
+committing. `npm test` runs the snapshot check automatically.
+
+```sh
+npm run sync-lockfile-snapshot
+npm run check-lockfile-snapshot
+```
+
 `npm test` runs self-contained tests. Some tests create temporary fixture
 specification repositories and local Git remotes so release-command behavior can
 be checked without a separate consumer repository.
@@ -316,7 +327,7 @@ regressions. Useful examples:
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
 | `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
 | `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
-| `tests/package/package-lock.test.mjs` | Lockfile entries that must exist for `npm ci` on GitHub-hosted Linux runners. |
+| `tests/package/package-lock.test.mjs` | Lockfile invariants, including keeping the packaged lockfile snapshot in sync with the root `package-lock.json`. |
 | `tests/lockfile/sync-consumer-lockfile.test.mjs` | How `oai-spec-sync-lockfile` repairs a consumer lockfile while preserving the resolved build-infra commit. |
 | `tests/package/exports.test.mjs` | Public helper modules that consumer test suites can import. |
 
