@@ -34,8 +34,9 @@
     "./vitest-config": "./src/vitest-config.mjs"
   },
   "scripts": {
+    "check-lockfile-snapshot": "node src/lockfile/check-lockfile-snapshot.mjs",
     "sync-lockfile-snapshot": "cp package-lock.json src/lockfile/build-infra-package-lock.json",
-    "test": "vitest run"
+    "test": "npm run check-lockfile-snapshot && vitest run"
   },
   "dependencies": {
     "@hyperjump/browser": "^1.0.0",

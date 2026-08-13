@@ -305,10 +305,11 @@ npm test
 ```
 
 When `package-lock.json` changes, refresh the packaged lockfile snapshot before
-committing:
+committing. `npm test` runs the snapshot check automatically.
 
 ```sh
 npm run sync-lockfile-snapshot
+npm run check-lockfile-snapshot
 ```
 
 `npm test` runs self-contained tests. Some tests create temporary fixture

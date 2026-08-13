@@ -162,8 +162,10 @@ snapshot too:
 
 ```sh
 npm run sync-lockfile-snapshot
-npm test -- tests/package/package-lock.test.mjs
+npm run check-lockfile-snapshot
 ```
+
+`npm test` also runs this check before the Vitest suite.
 
 ## Release Command Maintenance
 
