@@ -37,8 +37,23 @@ describe("Yarn Git dependency installation", () => {
       GIT_CONFIG_GLOBAL: gitConfig,
       GIT_CONFIG_NOSYSTEM: "1"
     };
+    const mutableEnv = {
+      ...env,
+      YARN_ENABLE_HARDENED_MODE: "0",
+      YARN_ENABLE_IMMUTABLE_INSTALLS: "0"
+    };
+    const immutableEnv = {
+      ...env,
+      YARN_ENABLE_HARDENED_MODE: "0",
+      YARN_ENABLE_IMMUTABLE_INSTALLS: "1"
+    };
+    const hardenedEnv = {
+      ...env,
+      YARN_ENABLE_HARDENED_MODE: "1",
+      YARN_ENABLE_IMMUTABLE_INSTALLS: "1"
+    };
 
-    yarn(consumer, ["install"], env);
+    yarn(consumer, ["install"], mutableEnv);
 
     const firstLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
     expect(firstLockfile).toContain(`build-infra.git#commit=${firstCommit}`);
@@ -54,11 +69,8 @@ describe("Yarn Git dependency installation", () => {
     git(provider, ["commit", "-m", "update fixture package"]);
     const secondCommit = git(provider, ["rev-parse", "HEAD"]);
 
-    yarn(consumer, ["install", "--immutable"], {
-      ...env,
-      YARN_ENABLE_HARDENED_MODE: "1"
-    });
-    yarn(consumer, ["up", "-R", "@oai/build-infra"], env);
+    yarn(consumer, ["install", "--immutable"], hardenedEnv);
+    yarn(consumer, ["up", "-R", "@oai/build-infra"], mutableEnv);
 
     const secondLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
     expect(secondLockfile).toContain(`build-infra.git#commit=${secondCommit}`);
@@ -67,14 +79,11 @@ describe("Yarn Git dependency installation", () => {
 
     git(provider, ["branch", "feature", secondCommit]);
     git(provider, ["reset", "--hard", firstCommit]);
-    yarn(consumer, ["install", "--immutable"], {
-      ...env,
-      YARN_ENABLE_HARDENED_MODE: "1"
-    });
+    yarn(consumer, ["install", "--immutable"], hardenedEnv);
 
     rmSync(join(consumer, "node_modules"), { recursive: true, force: true });
     rmSync(join(consumer, ".yarn"), { recursive: true, force: true });
-    yarn(consumer, ["install", "--immutable"], env);
+    yarn(consumer, ["install", "--immutable"], immutableEnv);
 
     const output = execFileSync(
       process.execPath,
