@@ -46,10 +46,7 @@ describe("Yarn Git dependency installation", () => {
     expect(existsSync(join(consumer, "node_modules/.bin/oai-spec-build"))).toBe(true);
     writeFileSync(join(consumer, "spec.config.json"), '{"specSrc":"spec.md"}\n');
     writeFileSync(join(consumer, "README.md"), "# Consumer fixture\n");
-    execFileSync(join(consumer, "node_modules/.bin/oai-spec-format-markdown"), [], {
-      cwd: consumer,
-      encoding: "utf8"
-    });
+    yarn(consumer, ["format-markdown"], env);
 
     const packageJsonBeforeUpdate = readFileSync(join(consumer, "package.json"), "utf8");
     writeFileSync(join(provider, "UPDATE-MARKER"), "new provider commit\n");
@@ -114,6 +111,9 @@ function createConsumer(root) {
     name: "build-infra-consumer-fixture",
     private: true,
     packageManager: "yarn@4.18.0",
+    scripts: {
+      "format-markdown": "oai-spec-format-markdown"
+    },
     dependencies: {
       "@oai/build-infra": "git+https://build-infra.test/OAI/build-infra.git#main"
     },
