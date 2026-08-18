@@ -29,8 +29,6 @@ describe("installed package behavior in a consumer repository", () => {
     expect(readFileSync(join(fixture.consumer, "deploy-preview/schema", latestSchemaDate(fixture.consumer)), "utf8")).toContain("type: object");
 
     expect(runBin(fixture, "oai-spec-test")).toContain("c8 --100");
-    runBin(fixture, "oai-spec-sync-lockfile");
-    expect(readFileSync(join(fixture.consumer, "package-lock.json"), "utf8")).toContain("node_modules/@oai/build-infra");
     expect(() => runBin(fixture, "oai-spec-start-release", ["--no-push"])).toThrow(/development branch/);
     expect(() => runBin(fixture, "oai-spec-adjust-release-branch")).toThrow(/release branch/);
   });
@@ -46,11 +44,10 @@ function createConsumerFixture() {
 
   mkdirSync(installedPackage, { recursive: true });
   mkdirSync(consumerBin, { recursive: true });
-  for (const path of ["bin", "configs", "src/lockfile", "src/md2html", "src/release", "src/schema", "src/shell"]) {
+  for (const path of ["bin", "configs", "src/md2html", "src/release", "src/schema", "src/shell"]) {
     cpSync(join(packageRoot, path), join(installedPackage, path), { recursive: true });
   }
   cpSync(join(packageRoot, "package.json"), join(installedPackage, "package.json"));
-  cpSync(join(packageRoot, "package-lock.json"), join(installedPackage, "package-lock.json"));
 
   writeConsumerFiles(consumer);
   writeToolStubs(consumer, consumerBin);
@@ -76,21 +73,6 @@ function writeConsumerFiles(consumer) {
   writeFileSync(join(consumer, ".linkspector.yml"), "dirs:\n  - .\n");
   writeFileSync(join(consumer, "src/spec.md"), "# Fixture Spec\n");
   writeFileSync(join(consumer, "src/schemas/validation/schema.yaml"), "type: object\n");
-  writeFileSync(join(consumer, "package-lock.json"), JSON.stringify({
-    lockfileVersion: 3,
-    packages: {
-      "": {
-        name: "consumer",
-        dependencies: {
-          "@oai/build-infra": "git+https://github.com/OAI/build-infra.git#main"
-        }
-      },
-      "node_modules/@oai/build-infra": {
-        version: "0.0.0",
-        resolved: "git+https://github.com/OAI/build-infra.git#fixture"
-      }
-    }
-  }));
 }
 
 function writeToolStubs(consumer, consumerBin) {
