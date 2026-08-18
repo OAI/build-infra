@@ -54,6 +54,10 @@ describe("Yarn Git dependency installation", () => {
     git(provider, ["commit", "-m", "update fixture package"]);
     const secondCommit = git(provider, ["rev-parse", "HEAD"]);
 
+    yarn(consumer, ["install", "--immutable"], {
+      ...env,
+      YARN_ENABLE_HARDENED_MODE: "1"
+    });
     yarn(consumer, ["up", "-R", "@oai/build-infra"], env);
 
     const secondLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
