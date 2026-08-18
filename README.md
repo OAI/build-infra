@@ -347,7 +347,7 @@ regressions. Useful examples:
 
 | Test file | What it documents |
 | --------- | ----------------- |
-| `tests/consumer/git-dependency.test.mjs` | The normal integration path: Yarn installs build-infra from a Git branch, records an exact commit, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
+| `tests/consumer/git-dependency.test.mjs` | The normal integration path: Yarn installs build-infra from a Git branch, records an exact commit, keeps that lock stable in hardened mode after the branch advances, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
 | `tests/consumer/installed-package.test.mjs` | How all public command-line tools behave from an installed `node_modules` package layout. |
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
 | `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
