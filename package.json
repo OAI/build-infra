@@ -40,8 +40,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@hyperjump/browser": "1.4.0",
-    "@hyperjump/json-schema": "1.17.7",
+    "@hyperjump/browser": "1.5.0",
+    "@hyperjump/json-schema": "1.17.8",
     "@hyperjump/json-schema-coverage": "1.2.1",
     "@umbrelladocs/linkspector": "0.5.6",
     "@vitest/coverage-v8": "4.1.10",

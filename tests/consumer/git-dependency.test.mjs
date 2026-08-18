@@ -71,6 +71,12 @@ describe("Yarn Git dependency installation", () => {
         "--input-type=module",
         "--eval",
         [
+          'const { createRequire } = await import("node:module");',
+          "const consumerRequire = createRequire(import.meta.url);",
+          'const buildInfraRequire = createRequire(consumerRequire.resolve("@oai/build-infra/package.json"));',
+          'const coverageRequire = createRequire(buildInfraRequire.resolve("@hyperjump/json-schema-coverage/vitest"));',
+          'if (buildInfraRequire.resolve("@hyperjump/browser") !== coverageRequire.resolve("@hyperjump/browser")) throw new Error("duplicate Hyperjump Browser runtimes");',
+          'if (buildInfraRequire.resolve("@hyperjump/json-schema") !== coverageRequire.resolve("@hyperjump/json-schema")) throw new Error("duplicate Hyperjump JSON Schema runtimes");',
           'const testHelpers = await import("@oai/build-infra/test");',
           'const schemaHelpers = await import("@oai/build-infra/schema/vitest");',
           'console.log(typeof testHelpers.test, typeof schemaHelpers.registerSchema);'

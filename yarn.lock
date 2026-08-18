@@ -110,19 +110,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hyperjump/browser@npm:1.4.0":
-  version: 1.4.0
-  resolution: "@hyperjump/browser@npm:1.4.0"
-  dependencies:
-    "@hyperjump/json-pointer": "npm:^1.1.0"
-    "@hyperjump/uri": "npm:^1.2.0"
-    content-type: "npm:^1.0.5"
-    just-curry-it: "npm:^5.3.0"
-  checksum: 10c0/7fd023e22c865acc4d4127b9e82ed3798a59815ca23939559638be433908e65dec639272be7fd5dae20a0fcc73e9e61c411f1e273ae0165ad71fdce4b50d7502
-  languageName: node
-  linkType: hard
-
-"@hyperjump/browser@npm:^1.3.1":
+"@hyperjump/browser@npm:1.5.0, @hyperjump/browser@npm:^1.3.1":
   version: 1.5.0
   resolution: "@hyperjump/browser@npm:1.5.0"
   dependencies:
@@ -174,25 +162,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hyperjump/json-schema@npm:1.17.7":
-  version: 1.17.7
-  resolution: "@hyperjump/json-schema@npm:1.17.7"
-  dependencies:
-    "@hyperjump/json-pointer": "npm:^1.1.0"
-    "@hyperjump/json-schema-formats": "npm:^1.0.0"
-    "@hyperjump/pact": "npm:^1.2.0"
-    "@hyperjump/uri": "npm:^1.2.0"
-    content-type: "npm:^1.0.4"
-    json-stringify-deterministic: "npm:^1.0.12"
-    just-curry-it: "npm:^5.3.0"
-    uuid: "npm:^14.0.0"
-  peerDependencies:
-    "@hyperjump/browser": ^1.1.0
-  checksum: 10c0/70d8b148e18288cacd3a155eeffdcb0f8d5874c72dc75b0b030d35ac69c32c1da832b799681c07380b75cf30bfe199acf5acf1d7c48a1bb5683089440f32107d
-  languageName: node
-  linkType: hard
-
-"@hyperjump/json-schema@npm:^1.17.2":
+"@hyperjump/json-schema@npm:1.17.8, @hyperjump/json-schema@npm:^1.17.2":
   version: 1.17.8
   resolution: "@hyperjump/json-schema@npm:1.17.8"
   dependencies:
@@ -295,8 +265,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@oai/build-infra@workspace:."
   dependencies:
-    "@hyperjump/browser": "npm:1.4.0"
-    "@hyperjump/json-schema": "npm:1.17.7"
+    "@hyperjump/browser": "npm:1.5.0"
+    "@hyperjump/json-schema": "npm:1.17.8"
     "@hyperjump/json-schema-coverage": "npm:1.2.1"
     "@umbrelladocs/linkspector": "npm:0.5.6"
     "@vitest/coverage-v8": "npm:4.1.10"
