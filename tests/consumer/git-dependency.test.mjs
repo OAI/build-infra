@@ -44,6 +44,12 @@ describe("Yarn Git dependency installation", () => {
     expect(firstLockfile).toContain(`build-infra.git#commit=${firstCommit}`);
     expect(existsSync(join(consumer, "node_modules/@oai/build-infra/package-lock.json"))).toBe(false);
     expect(existsSync(join(consumer, "node_modules/.bin/oai-spec-build"))).toBe(true);
+    writeFileSync(join(consumer, "spec.config.json"), '{"specSrc":"spec.md"}\n');
+    writeFileSync(join(consumer, "README.md"), "# Consumer fixture\n");
+    execFileSync(join(consumer, "node_modules/.bin/oai-spec-format-markdown"), [], {
+      cwd: consumer,
+      encoding: "utf8"
+    });
 
     const packageJsonBeforeUpdate = readFileSync(join(consumer, "package.json"), "utf8");
     writeFileSync(join(provider, "UPDATE-MARKER"), "new provider commit\n");
