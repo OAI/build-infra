@@ -65,6 +65,13 @@ describe("Yarn Git dependency installation", () => {
     expect(secondLockfile).not.toContain(`build-infra.git#commit=${firstCommit}`);
     expect(readFileSync(join(consumer, "package.json"), "utf8")).toBe(packageJsonBeforeUpdate);
 
+    git(provider, ["branch", "feature", secondCommit]);
+    git(provider, ["reset", "--hard", firstCommit]);
+    yarn(consumer, ["install", "--immutable"], {
+      ...env,
+      YARN_ENABLE_HARDENED_MODE: "1"
+    });
+
     rmSync(join(consumer, "node_modules"), { recursive: true, force: true });
     rmSync(join(consumer, ".yarn"), { recursive: true, force: true });
     yarn(consumer, ["install", "--immutable"], env);
