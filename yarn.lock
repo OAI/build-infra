@@ -273,7 +273,7 @@ __metadata:
     c8: "npm:12.0.0"
     cheerio: "npm:1.2.0"
     content-type: "npm:2.0.0"
-    highlight.js: "npm:11.11.1"
+    highlight.js: "npm:11.12.0"
     markdown-it: "npm:15.0.0"
     markdownlint-cli2: "npm:0.23.2"
     respec: "npm:37.2.0"
@@ -1502,10 +1502,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"highlight.js@npm:11.11.1":
-  version: 11.11.1
-  resolution: "highlight.js@npm:11.11.1"
-  checksum: 10c0/40f53ac19dac079891fcefd5bd8a21cf2e8931fd47da5bd1dca73b7e4375c1defed0636fc39120c639b9c44119b7d110f7f0c15aa899557a5a1c8910f3c0144c
+"highlight.js@npm:11.12.0":
+  version: 11.12.0
+  resolution: "highlight.js@npm:11.12.0"
+  checksum: 10c0/c62ebfad125b541790412374a15ae1ca15a45fdfac0fae2b5c96b6a10dc8d5d15380adf748584fb08cfeb4db2b3a749a170e2afd0b640e9fad86445b1c435777
   languageName: node
   linkType: hard
 
