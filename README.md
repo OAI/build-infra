@@ -3,9 +3,10 @@
 This repository contains the shared build, test, publication, and release
 infrastructure used by OpenAPI Initiative specification repositories.
 
-It is an npm package because npm gives us a reliable way to distribute command
-line tools and their JavaScript dependencies. It is not published to npm.
-Specification repositories install it directly from GitHub.
+It is a Node.js package because a package gives us a reliable way to distribute
+command-line tools and their JavaScript dependencies. It is not published to
+the npm registry. Specification repositories install it directly from GitHub
+with Yarn.
 
 ## What This Package Provides
 
@@ -17,7 +18,6 @@ The package installs these command line tools:
 | `oai-spec-format-markdown` | Formats Markdown files with the shared Markdown rules. |
 | `oai-spec-validate-markdown` | Runs Markdown linting and link checks. |
 | `oai-spec-publish-schemas` | Converts YAML schemas under `src/schemas/validation/` into dated JSON schema iterations for the spec site. |
-| `oai-spec-sync-lockfile` | Repairs a consumer repository lockfile by syncing build-infra's verified transitive dependency tree. |
 | `oai-spec-test` | Runs Vitest and JSON Schema coverage with the shared test dependencies. |
 | `oai-spec-start-release` | Starts the next `vX.Y-dev-start-X.Y.Z` release-preparation branch. |
 | `oai-spec-adjust-release-branch` | Prepares a `vX.Y.Z-rel` branch for merge to `main`. |
@@ -51,23 +51,62 @@ Repositories that keep maintainers in a different file, such as
 
 ## Adding This To A Specification Repository
 
-1. Add this package as a GitHub dependency:
+1. Use Node.js 24 and Yarn 4.18. Add these package-manager fields and the GitHub
+   dependency to `package.json`:
 
    ```json
    {
+     "packageManager": "yarn@4.18.0",
+     "engines": {
+       "node": ">=24 <25"
+     },
      "dependencies": {
        "@oai/build-infra": "git+https://github.com/OAI/build-infra.git#main"
+     },
+     "dependenciesMeta": {
+       "puppeteer": {
+         "built": true
+       }
      }
    }
    ```
 
-2. Add npm scripts that wrap the shared commands:
+   `puppeteer` is a transitive dependency used by linkspector. Yarn disables
+   third-party install scripts by default, so this entry explicitly allows the
+   script that installs the browser used for link checking.
+
+2. Add `.nvmrc` so version managers can select the expected Node.js release:
+
+   ```text
+   24
+   ```
+
+3. Add `.yarnrc.yml`:
+
+   ```yaml
+   nodeLinker: node-modules
+   approvedGitRepositories:
+     - https://github.com/OAI/build-infra.git
+   ```
+
+   The shared shell commands currently require a `node_modules` installation.
+   Yarn 4 also requires GitHub dependencies to be explicitly approved.
+
+4. Ignore generated dependency state:
+
+   ```gitignore
+   node_modules/
+   .yarn/
+   coverage/
+   ```
+
+5. Add package scripts that wrap the shared commands:
 
    ```json
    {
      "scripts": {
        "build": "oai-spec-build",
-       "build-src": "npm run validate-markdown && oai-spec-build src",
+       "build-src": "yarn validate-markdown && oai-spec-build src",
        "format-markdown": "oai-spec-format-markdown",
        "validate-markdown": "oai-spec-validate-markdown",
        "start-release": "oai-spec-start-release",
@@ -81,14 +120,14 @@ Repositories that keep maintainers in a different file, such as
    ```json
    {
      "scripts": {
-       "build-src": "npm run validate-markdown && oai-spec-build src && oai-spec-publish-schemas src",
+       "build-src": "yarn validate-markdown && oai-spec-build src && oai-spec-publish-schemas src",
        "publish-schemas": "oai-spec-publish-schemas",
        "test": "oai-spec-test"
      }
    }
    ```
 
-3. Create `spec.config.json`. At minimum:
+6. Create `spec.config.json`. At minimum:
 
    ```json
    {
@@ -100,68 +139,60 @@ Repositories that keep maintainers in a different file, such as
    }
    ```
 
-4. Create or refresh the lockfile, then verify it with a clean install:
+7. Enable Corepack once, create the initial lockfile, and verify it:
 
    ```sh
-   npm install
-   npm ci
+   corepack enable
+   yarn install
+   yarn install --immutable
    ```
 
-   `npm install` is used here only to create or update `package-lock.json`.
-   `npm ci` is the check that the lockfile is complete enough for GitHub
-   Actions. Do not open the pull request until `npm ci` succeeds locally.
+   Commit `yarn.lock`. After the initial lockfile exists, use
+   `yarn install --immutable` for routine local installs and in GitHub Actions.
+   It fails instead of silently changing an out-of-date lockfile.
 
-The lockfile is important. `package.json` intentionally tracks the `main` branch
-of `OAI/build-infra`. `package-lock.json` records that requested dependency at
-the root of the lockfile, and also records the exact commit npm resolved under
-`packages["node_modules/@oai/build-infra"].resolved`. This makes CI repeatable
-while still letting maintainers update to the current `main` branch with
-`npm update @oai/build-infra`.
+The lockfile is important. `package.json` intentionally requests the `main`
+branch of `OAI/build-infra`, while `yarn.lock` records the exact Git commit
+resolved from that branch. This makes immutable installs repeatable without
+requiring maintainers to copy a commit hash into `package.json`.
 
 ## Keeping Dependencies Up To Date
 
 Most JavaScript dependency updates happen in this repository, not in each
-specification repository.
+specification repository. Direct toolchain dependencies are pinned exactly here
+so consumers receive the versions tested by build-infra.
 
-Dependabot opens pull requests here for npm dependency updates. After those
-changes are reviewed, merged, and pushed to `OAI/build-infra`, update each
-specification repository that should use the new shared infrastructure:
+Dependabot calls the JavaScript package ecosystem `npm`, even when the project
+uses Yarn, and opens pull requests that update `package.json` and `yarn.lock`.
+After an update is reviewed, merged, and pushed to `OAI/build-infra`, update each
+consumer repository with:
 
 ```sh
-npm update @oai/build-infra
-npm test
-npm run validate-markdown
-npm run build
+yarn up -R @oai/build-infra
+yarn install --immutable
+yarn test
+yarn validate-markdown
+yarn build
 ```
 
 For repositories that only have source builds, also run:
 
 ```sh
-npm run build-src
+yarn build-src
 ```
 
-Commit the resulting `package-lock.json` change in the specification repository.
-That change should update the resolved `@oai/build-infra` commit while leaving
-the requested dependency as `git+https://github.com/OAI/build-infra.git#main`.
-Before opening the pull request, run `npm ci` in the specification repository.
-If it reports missing or invalid transitive packages, the lockfile is incomplete;
-fix the lockfile and re-run `npm ci` rather than changing CI to use
-`npm install`.
+Commit the resulting `yarn.lock` change. `yarn up -R` re-resolves the existing
+`#main` request without changing `package.json`; the lockfile should move to the
+new build-infra commit. The self-contained Git-consumer test exercises this same
+update procedure.
 
-If a consumer repository's only npm dependency is `@oai/build-infra`, the
-maintainer can usually repair an incomplete lockfile with:
+### Updating Node.js Or Yarn
 
-```sh
-oai-spec-sync-lockfile
-npm ci
-```
-
-The command keeps the consumer repository's root package and resolved
-`@oai/build-infra` commit, then syncs the transitive dependency entries from the
-installed build-infra package lockfile snapshot. npm does not include a package's
-root `package-lock.json` when it installs a Git dependency, so build-infra keeps
-a packaged copy at `src/lockfile/build-infra-package-lock.json`. The test suite
-checks that this snapshot matches the repository's root `package-lock.json`.
+The expected Node.js release appears in `.nvmrc`, `package.json`, and GitHub
+Actions. The Yarn release appears in `packageManager`. Update build-infra first,
+run an immutable install and the complete test suite, then apply the same runtime
+versions to consumer repositories. Keeping these declarations aligned prevents
+local development, Git packaging, and CI from selecting different tools.
 
 ## `spec.config.json`
 
@@ -229,13 +260,13 @@ Typical release flow:
 
 1. Prepare and review the active source file on `vX.Y-dev`.
 2. Create a `vX.Y.Z-rel` branch from `vX.Y-dev`.
-3. Run `npm run adjust-release-branch`.
+3. Run `yarn adjust-release-branch`.
 4. Open a pull request from `vX.Y.Z-rel` to `main`.
 5. After the release lands and syncs back to `vX.Y-dev`, run
-   `npm run start-release` on `vX.Y-dev` to prepare the next patch version.
+   `yarn start-release` on `vX.Y-dev` to prepare the next patch version.
 
 For a new minor release branch, create the new `vX.Y-dev` branch first and then
-run `npm run start-release` there. If schema version rewriting is enabled, the
+run `yarn start-release` there. If schema version rewriting is enabled, the
 command updates configured schema and test files from the previous minor version
 to the new minor version.
 
@@ -300,19 +331,12 @@ OAS-style repositories that need custom vocabulary registration can pass
 When working on this package itself:
 
 ```sh
-npm ci
-npm test
+corepack enable
+yarn install --immutable
+yarn test
 ```
 
-When `package-lock.json` changes, refresh the packaged lockfile snapshot before
-committing. `npm test` runs the snapshot check automatically.
-
-```sh
-npm run sync-lockfile-snapshot
-npm run check-lockfile-snapshot
-```
-
-`npm test` runs self-contained tests. Some tests create temporary fixture
+`yarn test` runs self-contained tests. Some tests create temporary fixture
 specification repositories and local Git remotes so release-command behavior can
 be checked without a separate consumer repository.
 
@@ -323,12 +347,12 @@ regressions. Useful examples:
 
 | Test file | What it documents |
 | --------- | ----------------- |
-| `tests/consumer/installed-package.test.mjs` | How the public command line tools behave when build-infra is installed in a consumer repository and npm hoists dependencies to the consumer's top-level `node_modules`. |
+| `tests/consumer/git-dependency.test.mjs` | The normal integration path: Yarn installs build-infra from a Git branch, records an exact commit, keeps that lock stable in hardened mode while `main` advances or differs, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
+| `tests/consumer/installed-package.test.mjs` | How all public command-line tools behave from an installed `node_modules` package layout. |
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
 | `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
 | `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
-| `tests/package/package-lock.test.mjs` | Lockfile invariants, including keeping the packaged lockfile snapshot in sync with the root `package-lock.json`. |
-| `tests/lockfile/sync-consumer-lockfile.test.mjs` | How `oai-spec-sync-lockfile` repairs a consumer lockfile while preserving the resolved build-infra commit. |
+| `tests/package/package-manager.test.mjs` | The Yarn version, `node_modules` linker, exact direct dependencies, and Puppeteer install-script policy required by consumers. |
 | `tests/package/exports.test.mjs` | Public helper modules that consumer test suites can import. |
 
 When adding behavior to build-infra, prefer adding or extending one of these
@@ -347,4 +371,5 @@ temporary local dependency in that repository:
 }
 ```
 
-Do not commit that local `file:` dependency. It is only for local experiments.
+Run `yarn install` after making the temporary change. Do not commit that local
+`file:` dependency or its lockfile result; it is only for local experiments.

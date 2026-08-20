@@ -1,11 +1,4 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env node
+import { runBash } from "../src/shell/run-bash.mjs";
 
-SOURCE="${BASH_SOURCE[0]}"
-while [ -L "$SOURCE" ]; do
-  DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
-  SOURCE="$(readlink "$SOURCE")"
-  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
-done
-SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
-exec bash "$SCRIPT_DIR/../src/schema/schema-publish.sh" "$@"
+runBash(new URL("../src/schema/schema-publish.sh", import.meta.url), process.argv.slice(2));

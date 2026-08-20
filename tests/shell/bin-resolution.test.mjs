@@ -26,7 +26,7 @@ describe("shell command bin resolution", () => {
     writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
     writeBin(join(consumerBin, "linkspector"), "echo linkspector \"$@\"");
 
-    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-validate-markdown")], {
+    const output = execFileSync(join(installedPackage, "bin/oai-spec-validate-markdown"), [], {
       cwd: consumer,
       encoding: "utf8",
       env: {
@@ -51,7 +51,7 @@ describe("shell command bin resolution", () => {
     writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
     writeBin(join(consumerBin, "linkspector"), "echo NODE_OPTIONS=\"$NODE_OPTIONS\"\necho linkspector \"$@\"");
 
-    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-validate-markdown")], {
+    const output = execFileSync(join(installedPackage, "bin/oai-spec-validate-markdown"), [], {
       cwd: consumer,
       encoding: "utf8",
       env: {
@@ -73,7 +73,7 @@ describe("shell command bin resolution", () => {
     writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
     writeBin(join(consumerBin, "linkspector"), "echo NODE_OPTIONS=\"$NODE_OPTIONS\"\necho linkspector \"$@\"");
 
-    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-validate-markdown")], {
+    const output = execFileSync(join(installedPackage, "bin/oai-spec-validate-markdown"), [], {
       cwd: consumer,
       encoding: "utf8",
       env: {
@@ -95,7 +95,7 @@ describe("shell command bin resolution", () => {
     writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
     writeBin(join(consumerBin, "linkspector"), "echo linkspector \"$@\"");
 
-    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-validate-markdown")], {
+    const output = execFileSync(join(installedPackage, "bin/oai-spec-validate-markdown"), [], {
       cwd: consumer,
       encoding: "utf8",
       env: {
@@ -116,7 +116,7 @@ describe("shell command bin resolution", () => {
     writeFileSync(join(consumer, "README.md"), "# Fixture\n");
     writeBin(join(consumerBin, "markdownlint-cli2"), "echo markdownlint \"$@\"");
 
-    const output = execFileSync("bash", [join(installedPackage, "bin/oai-spec-format-markdown")], {
+    const output = execFileSync(join(installedPackage, "bin/oai-spec-format-markdown"), [], {
       cwd: consumer,
       encoding: "utf8",
       env: {

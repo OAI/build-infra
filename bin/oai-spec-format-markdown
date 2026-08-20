@@ -1,30 +1,4 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env node
+import { runBash } from "../src/shell/run-bash.mjs";
 
-CONFIG_FILE="${SPEC_CONFIG:-spec.config.json}"
-SOURCE="${BASH_SOURCE[0]}"
-while [ -L "$SOURCE" ]; do
-  DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
-  SOURCE="$(readlink "$SOURCE")"
-  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE"
-done
-SCRIPT_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
-PACKAGE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$PACKAGE_DIR/src/shell/bin-utils.sh"
-ROOT_CONFIG="${OAI_BUILD_INFRA_ROOT_CONFIG:-$PACKAGE_DIR/configs/markdownlint-root.yaml}"
-SPEC_CONFIG_LINT="${OAI_BUILD_INFRA_SPEC_CONFIG:-$PACKAGE_DIR/configs/markdownlint-spec.yaml}"
-MARKDOWNLINT="$(resolve_node_bin markdownlint-cli2 "$PACKAGE_DIR")"
-
-if [ ! -f "$CONFIG_FILE" ]; then
-  echo "Error: $CONFIG_FILE not found"
-  exit 1
-fi
-
-SPEC_SRC=$(node -e "const c=require('./$CONFIG_FILE'); console.log(c.specSrc || 'spec.md')")
-SPEC_PATH="src/$SPEC_SRC"
-
-if [ -f "$SPEC_PATH" ]; then
-  "$MARKDOWNLINT" --config "$SPEC_CONFIG_LINT" --fix "$SPEC_PATH"
-fi
-
-"$MARKDOWNLINT" --config "$ROOT_CONFIG" --fix "*.md"
+runBash(new URL("./oai-spec-format-markdown.sh", import.meta.url), process.argv.slice(2));

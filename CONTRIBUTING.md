@@ -1,7 +1,7 @@
 # Contributing To Build Infrastructure
 
 The goal is to keep the specification repositories uncluttered: each spec repo
-should call clear npm scripts, while this package owns the tool versions and
+should call clear package scripts, while this package owns the tool versions and
 reusable logic.
 
 ## Mental Model
@@ -13,7 +13,7 @@ There are four layers:
 2. Their `package.json` scripts call commands installed by `@oai/build-infra`.
 3. This repository implements those commands and owns the JavaScript
    dependencies they need.
-4. GitHub Actions in each specification repository run the same npm scripts that
+4. GitHub Actions in each specification repository run the same Yarn commands that
    maintainers run locally.
 
 If something is reusable across specification repositories, put it here. If it is
@@ -57,7 +57,9 @@ scratch repository before asking maintainers to trust them.
 Run the package tests:
 
 ```sh
-npm test
+corepack enable
+yarn install --immutable
+yarn test
 ```
 
 These tests include self-contained fixture repositories. They exercise the
@@ -78,94 +80,79 @@ least one specification repository with a temporary local dependency:
 Then run the relevant consumer scripts:
 
 ```sh
-npm ci
-npm test
-npm run validate-markdown
-npm run build
-npm run build-src
+yarn install
+yarn test
+yarn validate-markdown
+yarn build
+yarn build-src
 ```
 
 Not every repository has all of those scripts.
 
 Before committing consumer changes, change the dependency back to the GitHub
-dependency and refresh the lockfile after the build-infra commit is available on
-GitHub.
+dependency. Refresh the lockfile only after the build-infra commit is available
+on GitHub.
 
 ## Dependency Maintenance
 
-This repository owns most npm dependencies for the specification repositories.
-Dependabot is configured here for npm updates.
+This repository owns most JavaScript dependencies for the specification
+repositories. Direct dependencies are pinned exactly so consumers receive the
+versions tested here. Dependabot's JavaScript ecosystem is named `npm`, even for
+projects whose lockfile and commands use Yarn.
 
 When Dependabot opens a pull request:
 
 1. Read the release notes for major updates and security updates.
-2. Run `npm ci` and `npm test`.
+2. Run `yarn install --immutable` and `yarn test`.
 3. If the update touches build, markdown, schema, or test behavior, test a
    consumer repository with the local `file:../build-infra` dependency.
 4. Merge the build-infra update.
 5. In each consumer repository that should pick up the change, run:
 
    ```sh
-   npm update @oai/build-infra
+   yarn up -R @oai/build-infra
+   yarn install --immutable
    ```
 
-6. Commit the consumer repository's `package-lock.json` update.
+6. Run the consumer's relevant tests, validation, and builds.
+7. Commit the consumer repository's `yarn.lock` update.
 
 The consumer `package.json` should keep requesting
 `git+https://github.com/OAI/build-infra.git#main`. The consumer
-`package-lock.json` records that request at the root of the lockfile, and
-records the exact resolved Git commit under
-`packages["node_modules/@oai/build-infra"].resolved`. That resolved commit is
-intentional: it prevents CI from silently changing behavior because
-`OAI/build-infra` moved forward.
+`yarn.lock` records both that branch request and the exact Git commit resolved
+from it. That commit is intentional: immutable installs do not silently change
+behavior when `OAI/build-infra` moves forward. `yarn up -R` refreshes the
+resolution without changing `package.json`.
 
-### Lockfile Maintenance Warning
+### Yarn Lockfile And Security Settings
 
-Use `npm ci` as the normal install command in this repository and in consumer
-specification repositories, including on macOS. Do not use `npm install` merely
-to get a working local `node_modules` tree.
+`yarn.lock` is the only dependency lockfile. Yarn generates a complete,
+cross-platform dependency graph, including platform-specific optional packages.
+Never edit it manually or copy entries from another lockfile. There is no
+packaged lockfile snapshot and no consumer lockfile merge step.
 
-This matters because npm has sometimes produced an incomplete `package-lock.json`
-for platform-specific optional dependencies on macOS. Known failure modes
-include omitting optional peer-resolution entries for packages such as
-`@emnapi/core` and `@emnapi/runtime`, or leaving stale transitive entries from a
-previous dependency tree. The lockfile can appear to work locally but then fail
-in GitHub Actions, where `npm ci` checks the lockfile strictly on Linux.
+Use `yarn install --immutable` for routine installs and CI. Use a command that
+may change the lockfile only when that change is intentional:
 
-Only use `npm install`, `npm update`, or similar commands when you are
-intentionally creating or changing a lockfile. After any dependency change in
-this repository or in a consumer repository:
+* Use `yarn install` once when creating a new repository's first lockfile.
+* Use `yarn up <package>` for an intentional package version update.
+* Use `yarn up -R @oai/build-infra` to refresh a consumer's `#main` resolution.
 
-1. Run `npm ci`.
-2. Run `npm test`.
-3. Run any repository-specific build or validation scripts.
-4. Check that GitHub Actions also passes `npm ci`.
-5. If `npm ci` says packages are missing from the lockfile, fix the lockfile and
-   re-run `npm ci`. Do not paper over the problem by switching CI to
-   `npm install`.
+Yarn 4.18 has two security defaults that every consumer must configure:
 
-When setting up a new specification repository whose only npm dependency is
-`@oai/build-infra`, the consumer `package-lock.json` should contain the
-dependency tree needed by the resolved build-infra commit. If `npm ci` reports
-missing or invalid transitive packages after adding build-infra, compare the
-consumer lockfile with this repository's verified `package-lock.json`, or run
-`oai-spec-sync-lockfile` in the consumer repository, and make sure the consumer
-lockfile includes the same transitive package entries. This is especially
-important for optional dependencies, because those are where platform-specific
-lockfile gaps usually appear.
+* `.yarnrc.yml` must use `nodeLinker: node-modules`, because the shared shell
+  commands inspect that layout, and must list the build-infra URL under
+  `approvedGitRepositories`.
+* The top-level `package.json` must set
+  `dependenciesMeta.puppeteer.built: true`. This narrowly permits Puppeteer's
+  browser installation script, which linkspector needs. Do not enable all
+  third-party install scripts merely to silence a warning. Review any new
+  package that requests a build script and allow it only when build-infra needs
+  the generated artifact.
 
-The sync helper uses the packaged snapshot at
-`src/lockfile/build-infra-package-lock.json` when build-infra is installed from
-GitHub. npm does not include the root `package-lock.json` in installed Git
-packages. Whenever `package-lock.json` changes in this repository, refresh that
-snapshot too:
-
-```sh
-npm run sync-lockfile-snapshot
-npm run check-lockfile-snapshot
-```
-
-`npm test` also runs this check before the Vitest suite.
+The expected Node.js version is declared in `.nvmrc`, `package.json`, and CI;
+the Yarn version is declared in `packageManager`. When updating either runtime,
+change build-infra first, run all tests, and then align consumer repositories.
 
 ## Release Command Maintenance
 
@@ -196,11 +183,18 @@ Use `--no-push` in scratch tests.
 
 ## Common Failure Modes
 
-* `npm ci` fails in a consumer repository: the package lock's resolved
-  build-infra commit may not be reachable from GitHub yet, `package.json` and
-  `package-lock.json` may disagree about the requested dependency, or the
-  consumer lockfile may be missing transitive entries from build-infra's
-  dependency tree. Verify with `npm ci` before opening the pull request.
+* Yarn rejects the build-infra Git URL: add
+  `https://github.com/OAI/build-infra.git` to `approvedGitRepositories` in the
+  consumer's `.yarnrc.yml`.
+* Yarn reports that Puppeteer's build is disabled: add the documented
+  `dependenciesMeta.puppeteer.built` allowlist to the consumer's top-level
+  `package.json`, then run `yarn install` and commit the resulting lockfile.
+* `yarn install --immutable` reports that it would change `yarn.lock`: the
+  manifest and lockfile disagree. If a dependency change was intentional, run
+  the appropriate `yarn up` command and review the lockfile diff. Otherwise,
+  restore the matching manifest or lockfile from Git.
+* A consumer cannot fetch its locked build-infra commit: make sure that commit
+  has been pushed to GitHub before refreshing the consumer lockfile.
 * Release command says the working tree is dirty: commit or stash local changes
   first. These commands intentionally refuse to mix release edits with unrelated
   work.

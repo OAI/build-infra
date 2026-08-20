@@ -12,13 +12,16 @@
     "url": "https://github.com/OAI/build-infra.git"
   },
   "license": "Apache-2.0",
+  "packageManager": "yarn@4.18.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "bin": {
     "oai-spec-adjust-release-branch": "./bin/oai-spec-adjust-release-branch",
     "oai-spec-build": "./bin/oai-spec-build",
     "oai-spec-format-markdown": "./bin/oai-spec-format-markdown",
     "oai-spec-publish-schemas": "./bin/oai-spec-publish-schemas",
     "oai-spec-start-release": "./bin/oai-spec-start-release",
-    "oai-spec-sync-lockfile": "./bin/oai-spec-sync-lockfile",
     "oai-spec-test": "./bin/oai-spec-test",
     "oai-spec-validate-markdown": "./bin/oai-spec-validate-markdown"
   },
@@ -34,26 +37,29 @@
     "./vitest-config": "./src/vitest-config.mjs"
   },
   "scripts": {
-    "check-lockfile-snapshot": "node src/lockfile/check-lockfile-snapshot.mjs",
-    "sync-lockfile-snapshot": "cp package-lock.json src/lockfile/build-infra-package-lock.json",
-    "test": "npm run check-lockfile-snapshot && vitest run"
+    "test": "vitest run"
   },
   "dependencies": {
-    "@hyperjump/browser": "^1.0.0",
-    "@hyperjump/json-schema": "^1.17.7",
-    "@hyperjump/json-schema-coverage": "^1.2.1",
-    "@umbrelladocs/linkspector": "^0.5.6",
-    "@vitest/coverage-v8": "^4.1.10",
-    "cheerio": "^1.2.0",
-    "c8": "^12.0.0",
-    "content-type": "^2.0.0",
-    "highlight.js": "^11.11.1",
-    "markdownlint-cli2": "^0.23.2",
-    "markdown-it": "^15.0.0",
+    "@hyperjump/browser": "1.5.0",
+    "@hyperjump/json-schema": "1.17.8",
+    "@hyperjump/json-schema-coverage": "1.2.1",
+    "@umbrelladocs/linkspector": "0.5.6",
+    "@vitest/coverage-v8": "4.1.10",
+    "c8": "12.0.0",
+    "cheerio": "1.2.0",
+    "content-type": "2.0.0",
+    "highlight.js": "11.11.1",
+    "markdown-it": "15.0.0",
+    "markdownlint-cli2": "0.23.2",
     "respec": "37.2.0",
-    "vitest": "^4.0.1",
-    "yaml": "^2.9.0",
-    "yargs": "^18.1.0"
+    "vitest": "4.1.10",
+    "yaml": "2.9.0",
+    "yargs": "18.1.0"
+  },
+  "dependenciesMeta": {
+    "puppeteer": {
+      "built": true
+    }
   },
   "keywords": [
     "OpenAPI",
