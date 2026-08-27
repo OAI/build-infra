@@ -71,9 +71,10 @@ Repositories that keep maintainers in a different file, such as
    }
    ```
 
-   `puppeteer` is a transitive dependency used by linkspector. Yarn disables
-   third-party install scripts by default, so this entry explicitly allows the
-   script that installs the browser used for link checking.
+   `puppeteer` is a transitive dependency used by linkspector and ReSpec. Yarn
+   disables third-party install scripts by default, so this entry explicitly
+   allows the script that installs the browser used for link checking and
+   specification rendering.
 
 2. Add `.nvmrc` so version managers can select the expected Node.js release:
 
@@ -261,8 +262,14 @@ Typical release flow:
 1. Prepare and review the active source file on `vX.Y-dev`.
 2. Create a `vX.Y.Z-rel` branch from `vX.Y-dev`.
 3. Run `yarn adjust-release-branch`.
-4. Open a pull request from `vX.Y.Z-rel` to `main`.
-5. After the release lands and syncs back to `vX.Y-dev`, run
+4. Review the staged release changes with `git diff --cached`. The command
+   stages the complete release changeset, but does not commit it.
+5. Make any necessary manual adjustments. After editing, run `git add --all`
+   and review `git diff --cached` again so the staged versions include those
+   adjustments.
+6. Commit the release changes and open a pull request from `vX.Y.Z-rel` to
+   `main`.
+7. After the release lands and syncs back to `vX.Y-dev`, run
    `yarn start-release` on `vX.Y-dev` to prepare the next patch version.
 
 For a new minor release branch, create the new `vX.Y-dev` branch first and then

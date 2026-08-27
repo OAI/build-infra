@@ -145,8 +145,8 @@ Yarn 4.18 has two security defaults that every consumer must configure:
   `approvedGitRepositories`.
 * The top-level `package.json` must set
   `dependenciesMeta.puppeteer.built: true`. This narrowly permits Puppeteer's
-  browser installation script, which linkspector needs. Do not enable all
-  third-party install scripts merely to silence a warning. Review any new
+  browser installation script, which linkspector and ReSpec need. Do not enable
+  all third-party install scripts merely to silence a warning. Review any new
   package that requests a build script and allow it only when build-infra needs
   the generated artifact.
 
@@ -165,7 +165,14 @@ The release commands are intentionally conservative.
 * copies the active source Markdown to `versions/X.Y.Z.md`;
 * replaces `| TBD |` with the current date;
 * copies `EDITORS.md` to `versions/X.Y.Z-editors.md`, unless disabled;
-* removes paths listed in `release.removeOnReleaseBranch`.
+* removes paths listed in `release.removeOnReleaseBranch`;
+* stages the complete release changeset, but does not commit it.
+
+After running the command, use `git diff --cached` to review the proposed
+release commit. If manual adjustments are needed, edit the files, run
+`git add --all`, and review `git diff --cached` again before committing. This
+second staging step is important because otherwise a plain `git commit` would
+use the older staged contents rather than the manual edits.
 
 `oai-spec-start-release`:
 
