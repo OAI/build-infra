@@ -78,7 +78,8 @@ describe("release command behavior in fixture repositories", () => {
     writeFileSync(join(repo, "src/spec.md"), fixtureSpec("1.0.1", "Patch release"));
     runGit(repo, ["add", "src/spec.md"]);
     runGit(repo, ["commit", "-m", "prepare 1.0.1 release"]);
-    runNode(repo, [adjustReleaseBranchBin]);
+    const releaseHead = runGit(repo, ["rev-parse", "HEAD"]);
+    const output = runNode(repo, [adjustReleaseBranchBin]);
 
     const today = new Date().toISOString().slice(0, 10);
     const published = readFileSync(join(repo, "versions/1.0.1.md"), "utf8");
@@ -91,6 +92,15 @@ describe("release command behavior in fixture repositories", () => {
     expect(existsSync(join(repo, "tests/schema/pass"))).toBe(false);
     expect(existsSync(join(repo, "tests/schema/fail"))).toBe(false);
     expect(existsSync(join(repo, "tests/schema/schema.test.mjs"))).toBe(false);
+    expect(runGit(repo, ["rev-parse", "HEAD"])).toBe(releaseHead);
+    expect(runGit(repo, ["ls-files", "--error-unmatch", "versions/1.0.1.md"]))
+      .toBe("versions/1.0.1.md");
+    expect(runGit(repo, ["ls-files", "--error-unmatch", "versions/1.0.1-editors.md"]))
+      .toBe("versions/1.0.1-editors.md");
+    expect(runGit(repo, ["diff", "--name-only"])).toBe("");
+    expect(runGit(repo, ["status", "--porcelain"])).not.toMatch(/^\?\?/m);
+    expect(output).toContain("Release changes have been staged for review.");
+    expect(output).toContain("After making manual edits, run: git add --all");
   });
 
   test("start-release fails outside a development branch", async () => {
