@@ -44,7 +44,7 @@
     "@hyperjump/json-schema": "1.17.8",
     "@hyperjump/json-schema-coverage": "1.2.1",
     "@umbrelladocs/linkspector": "0.5.6",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "c8": "12.0.0",
     "cheerio": "1.2.0",
     "content-type": "2.0.0",
@@ -52,7 +52,7 @@
     "markdown-it": "15.0.0",
     "markdownlint-cli2": "0.23.2",
     "respec": "37.3.0",
-    "vitest": "4.1.10",
+    "vitest": "4.1.11",
     "yaml": "2.9.0",
     "yargs": "18.1.0"
   },
