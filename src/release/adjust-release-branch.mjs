@@ -2,6 +2,7 @@ import { copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import {
   currentBranch,
   editorsSnapshotPath,
+  git,
   loadReleaseConfig,
   parseArgs,
   publishedSpecPath,
@@ -43,5 +44,11 @@ export async function adjustReleaseBranch(args = []) {
     removeConfiguredPaths(config.removeOnReleaseBranch);
   }
 
+  console.log("=== Stage release changes");
+  git(["add", "--all"]);
+
   console.log("=== Done");
+  console.log("Release changes have been staged for review.");
+  console.log("Review them with: git diff --cached");
+  console.log("After making manual edits, run: git add --all");
 }
