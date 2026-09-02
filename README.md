@@ -414,6 +414,57 @@ provided, it also commits that temporary dependency update, creates a release
 branch, and stages release output. Never point it at a working checkout that
 contains work you need to keep.
 
+## Releasing Build-Infra
+
+Build-infra is installed directly from GitHub and is never published to npm.
+`package.json` therefore sets `private` to `true`, and an immutable `vX.Y.Z` Git
+tag identifies each released version.
+
+The `main` branch contains candidates. Merging a pull request to `main` does not
+release it. A commit becomes release-worthy only when the manually triggered
+**Release build-infra** workflow successfully creates its version tag.
+
+Use semantic versions to communicate compatibility:
+
+* Patch releases contain fixes and dependency updates that do not change the
+  consumer-facing command or configuration contract.
+* Minor releases add backward-compatible commands or configuration options.
+* Major releases change existing commands, configuration, or runtime
+  requirements incompatibly.
+
+Prepare and publish a release as follows:
+
+1. Change `version` in `package.json` to the intended stable `X.Y.Z` version.
+2. Run `yarn install` because the package manifest changed, followed by
+   `yarn install --immutable` and `yarn test`.
+3. Commit the version change through the normal pull-request process.
+4. After it merges, open GitHub Actions, choose **Release build-infra**, select
+   `main`, and run the workflow.
+5. Wait for the package tests and all downstream consumer qualification jobs.
+6. Approve the `build-infra-release` environment deployment when GitHub asks.
+7. Verify that the workflow created the annotated `vX.Y.Z` tag on the exact
+   commit it tested.
+
+The workflow refuses prerelease version strings, npm-publishable package
+metadata, non-`main` runs, mismatched commits, and reused tags. It tests and tags
+the commit selected when the workflow starts, even if `main` advances while its
+downstream jobs are running.
+
+Never move, replace, or reuse a release tag. If a released version is faulty,
+revert or fix the problem on `main` and publish a new patch version.
+
+### One-Time GitHub Configuration
+
+A repository administrator must create an environment named
+`build-infra-release` under **Settings > Environments** and assign its required
+reviewers. Without that protection, the final workflow job will not pause for
+human approval.
+
+Also create a tag ruleset for `v*` under **Settings > Rules > Rulesets**. Prevent
+tag updates and deletions, while allowing the release workflow to create new
+tags. The exact bypass settings depend on the repository's organization policy,
+so verify the first release with an administrator present.
+
 To test changes in a specification repository before pushing build-infra, use a
 temporary local dependency in that repository:
 

@@ -1,0 +1,82 @@
+name: Release build-infra
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Check release metadata and package tests
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+
+    steps:
+      - name: Check out selected main commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.x"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run package tests
+        run: yarn test
+
+      - name: Check release metadata
+        id: release
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_REF: ${{ github.ref }}
+        run: |
+          version="$(yarn release:check --commit="$RELEASE_COMMIT" --ref="$RELEASE_REF")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  consumers:
+    name: Qualify downstream consumers
+    needs: preflight
+    uses: ./.github/workflows/qualify-consumers.yml
+    with:
+      build_infra_commit: ${{ github.sha }}
+
+  tag:
+    name: Create release tag
+    needs:
+      - preflight
+      - consumers
+    runs-on: ubuntu-latest
+    environment: build-infra-release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out qualified commit
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Create and push annotated tag
+        env:
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_VERSION: ${{ needs.preflight.outputs.version }}
+        run: |
+          tag="v$RELEASE_VERSION"
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists on origin" >&2
+            exit 1
+          fi
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            tag --annotate "$tag" "$RELEASE_COMMIT" --message="Release $RELEASE_VERSION"
+          git push origin "refs/tags/$tag"
