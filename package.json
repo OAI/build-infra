@@ -37,6 +37,7 @@
     "./vitest-config": "./src/vitest-config.mjs"
   },
   "scripts": {
+    "qualify-consumer": "node scripts/qualify-consumer.mjs",
     "test": "vitest run"
   },
   "dependencies": {
