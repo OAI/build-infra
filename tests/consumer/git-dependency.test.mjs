@@ -24,12 +24,12 @@ afterEach(() => {
 });
 
 describe("Yarn Git dependency installation", () => {
-  test("installs, updates, and immutably reinstalls the Git dependency", () => {
+  test("installs and updates only compatible released Git tags", () => {
     const root = mkdtempSync(join(tmpdir(), "oai-yarn-git-consumer-"));
     testDirs.push(root);
 
     const provider = createProviderRepository(root);
-    const firstCommit = git(provider, ["rev-parse", "HEAD"]);
+    const firstRelease = git(provider, ["rev-parse", "v1.0.0"]);
     const consumer = createConsumer(root);
     const gitConfig = configureLocalGitRemote(root, provider);
     const env = {
@@ -56,7 +56,8 @@ describe("Yarn Git dependency installation", () => {
     yarn(consumer, ["install"], mutableEnv);
 
     const firstLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
-    expect(firstLockfile).toContain(`build-infra.git#commit=${firstCommit}`);
+    expect(firstLockfile).toContain(`build-infra.git#commit=${firstRelease}`);
+    expect(installedVersion(consumer)).toBe("1.0.0");
     expect(existsSync(join(consumer, "node_modules/@oai/build-infra/package-lock.json"))).toBe(false);
     expect(existsSync(join(consumer, "node_modules/.bin/oai-spec-build"))).toBe(true);
     writeFileSync(join(consumer, "spec.config.json"), '{"specSrc":"spec.md"}\n');
@@ -65,20 +66,47 @@ describe("Yarn Git dependency installation", () => {
 
     const packageJsonBeforeUpdate = readFileSync(join(consumer, "package.json"), "utf8");
     writeFileSync(join(provider, "UPDATE-MARKER"), "new provider commit\n");
+    setProviderVersion(provider, "1.0.1");
     git(provider, ["add", "UPDATE-MARKER"]);
+    git(provider, ["add", "package.json"]);
     git(provider, ["commit", "-m", "update fixture package"]);
     const secondCommit = git(provider, ["rev-parse", "HEAD"]);
 
     yarn(consumer, ["install", "--immutable"], hardenedEnv);
     yarn(consumer, ["up", "-R", "@oai/build-infra"], mutableEnv);
 
-    const secondLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
-    expect(secondLockfile).toContain(`build-infra.git#commit=${secondCommit}`);
-    expect(secondLockfile).not.toContain(`build-infra.git#commit=${firstCommit}`);
+    const untaggedLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
+    expect(untaggedLockfile).toBe(firstLockfile);
+    expect(untaggedLockfile).not.toContain(`build-infra.git#commit=${secondCommit}`);
+    expect(installedVersion(consumer)).toBe("1.0.0");
     expect(readFileSync(join(consumer, "package.json"), "utf8")).toBe(packageJsonBeforeUpdate);
 
-    git(provider, ["branch", "feature", secondCommit]);
-    git(provider, ["reset", "--hard", firstCommit]);
+    git(provider, ["tag", "--annotate", "v1.0.1", "--message", "Release 1.0.1"]);
+    const secondRelease = git(provider, ["rev-parse", "v1.0.1"]);
+    yarn(consumer, ["up", "-R", "@oai/build-infra"], mutableEnv);
+
+    const compatibleLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
+    expect(compatibleLockfile).toContain(`build-infra.git#commit=${secondRelease}`);
+    expect(compatibleLockfile).not.toContain(`build-infra.git#commit=${firstRelease}`);
+    expect(installedVersion(consumer)).toBe("1.0.1");
+    expect(readFileSync(join(consumer, "package.json"), "utf8")).toBe(packageJsonBeforeUpdate);
+
+    writeFileSync(join(provider, "UPDATE-MARKER"), "next major provider commit\n");
+    setProviderVersion(provider, "2.0.0");
+    git(provider, ["add", "UPDATE-MARKER"]);
+    git(provider, ["add", "package.json"]);
+    git(provider, ["commit", "-m", "update fixture package to next major"]);
+    git(provider, ["tag", "--annotate", "v2.0.0", "--message", "Release 2.0.0"]);
+    const nextMajorRelease = git(provider, ["rev-parse", "v2.0.0"]);
+
+    yarn(consumer, ["up", "-R", "@oai/build-infra"], mutableEnv);
+
+    const nextMajorLockfile = readFileSync(join(consumer, "yarn.lock"), "utf8");
+    expect(nextMajorLockfile).toBe(compatibleLockfile);
+    expect(nextMajorLockfile).not.toContain(`build-infra.git#commit=${nextMajorRelease}`);
+    expect(installedVersion(consumer)).toBe("1.0.1");
+    expect(readFileSync(join(consumer, "package.json"), "utf8")).toBe(packageJsonBeforeUpdate);
+
     yarn(consumer, ["install", "--immutable"], hardenedEnv);
 
     rmSync(join(consumer, "node_modules"), { recursive: true, force: true });
@@ -119,12 +147,14 @@ function createProviderRepository(root) {
   for (const path of ["package.json", "yarn.lock", ".yarnrc.yml"]) {
     cpSync(join(packageRoot, path), join(provider, path));
   }
+  setProviderVersion(provider, "1.0.0");
 
   git(provider, ["init", "--initial-branch=main"]);
   git(provider, ["config", "user.name", "Fixture Maintainer"]);
   git(provider, ["config", "user.email", "fixture@example.com"]);
   git(provider, ["add", "."]);
   git(provider, ["commit", "-m", "fixture package"]);
+  git(provider, ["tag", "--annotate", "v1.0.0", "--message", "Release 1.0.0"]);
 
   return provider;
 }
@@ -141,7 +171,7 @@ function createConsumer(root) {
       "format-markdown": "oai-spec-format-markdown"
     },
     dependencies: {
-      "@oai/build-infra": "git+https://build-infra.test/OAI/build-infra.git#main"
+      "@oai/build-infra": "git+https://build-infra.test/OAI/build-infra.git#semver:^1.0.0"
     },
     dependenciesMeta: {
       puppeteer: {
@@ -160,6 +190,18 @@ function createConsumer(root) {
   );
 
   return consumer;
+}
+
+function setProviderVersion(provider, version) {
+  const packageJsonPath = join(provider, "package.json");
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf8"));
+  packageJson.version = version;
+  writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n");
+}
+
+function installedVersion(consumer) {
+  const packageJsonPath = join(consumer, "node_modules/@oai/build-infra/package.json");
+  return JSON.parse(readFileSync(packageJsonPath, "utf8")).version;
 }
 
 function configureLocalGitRemote(root, provider) {
