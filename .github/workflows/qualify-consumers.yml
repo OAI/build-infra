@@ -1,0 +1,87 @@
+name: Qualify build-infra candidate
+
+on:
+  workflow_call:
+    inputs:
+      build_infra_commit:
+        description: Full commit SHA from OAI/build-infra
+        required: false
+        type: string
+  workflow_dispatch:
+    inputs:
+      build_infra_commit:
+        description: Full commit SHA from OAI/build-infra; defaults to the selected workflow ref
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    name: ${{ matrix.repository }} (${{ matrix.ref }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - repository: OAI/OpenAPI-Specification
+            ref: main
+            release_version: ""
+          - repository: OAI/OpenAPI-Specification
+            ref: dev
+            release_version: ""
+          - repository: OAI/OpenAPI-Specification
+            ref: v3.1-dev
+            release_version: "3.1.999"
+          - repository: OAI/OpenAPI-Specification
+            ref: v3.2-dev
+            release_version: "3.2.999"
+          - repository: OAI/OpenAPI-Specification
+            ref: v3.3-dev
+            release_version: "3.3.999"
+          - repository: OAI/sig-lifecycle
+            ref: main
+            release_version: ""
+          - repository: OAI/sig-security
+            ref: main
+            release_version: ""
+          - repository: OAI/sig-security
+            ref: v1.0-dev
+            release_version: ""
+
+    steps:
+      - name: Check out build-infra candidate
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.build_infra_commit || github.sha }}
+          path: build-infra
+
+      - name: Check out consumer
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          fetch-depth: 0
+          path: consumer
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.x"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Qualify candidate
+        env:
+          BUILD_INFRA_COMMIT: ${{ inputs.build_infra_commit || github.sha }}
+          CONSUMER_BASE: ${{ matrix.ref }}
+          RELEASE_VERSION: ${{ matrix.release_version }}
+        run: >-
+          node build-infra/scripts/qualify-consumer.mjs
+          --consumer=consumer
+          --candidate="$BUILD_INFRA_COMMIT"
+          --base="$CONSUMER_BASE"
+          --release-version="$RELEASE_VERSION"
