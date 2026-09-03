@@ -117,7 +117,7 @@ describe("consumer qualification", () => {
       `git -c user.name=Build Infra Qualification -c user.email=build-infra-qualification@openapis.org commit -m Test build-infra candidate ${candidate.slice(0, 12)}`,
       "git switch -c v1.2.3-rel",
       "corepack yarn adjust-release-branch",
-      "git diff --cached --name-only --diff-filter=A"
+      "git diff --cached --name-only --diff-filter=AR"
     ]);
   });
 

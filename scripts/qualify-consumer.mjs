@@ -156,7 +156,7 @@ function qualifyRelease(consumer, candidate, version, run) {
 
   const addedFiles = run(
     "git",
-    ["diff", "--cached", "--name-only", "--diff-filter=A"],
+    ["diff", "--cached", "--name-only", "--diff-filter=AR"],
     { cwd: consumer, capture: true }
   ).split("\n").filter(Boolean);
 
