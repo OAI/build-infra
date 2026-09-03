@@ -66,6 +66,19 @@ These tests include self-contained fixture repositories. They exercise the
 public commands against temporary consumer-shaped Git repositories, so they can
 run locally and in GitHub CI without another checkout.
 
+After a candidate commit has been pushed to `OAI/build-infra`, run the manual
+**Qualify build-infra candidate** GitHub Actions workflow. It installs that exact
+commit into disposable checkouts of the active OpenAPI Specification and SIG
+branches, then runs each checkout's applicable validation, tests, builds, and
+release-adjustment checks. A candidate that has only passed `yarn test` has not
+yet been checked against the real downstream content and histories.
+
+The workflow uses `scripts/qualify-consumer.mjs`. You may run it locally against
+a disposable clone, but never against a checkout with work you need to keep: it
+rewrites the dependency and lockfile, and release qualification also commits the
+temporary update and creates a release branch. See the README for its arguments
+and current consumer matrix.
+
 For changes that affect behavior not covered by those fixtures, also test in at
 least one specification repository with a temporary local dependency:
 
@@ -107,15 +120,16 @@ When Dependabot opens a pull request:
 3. If the update touches build, markdown, schema, or test behavior, test a
    consumer repository with the local `file:../build-infra` dependency.
 4. Merge the build-infra update.
-5. In each consumer repository that should pick up the change, run:
+5. Run the **Qualify build-infra candidate** workflow for the merged commit.
+6. In each consumer repository that should pick up the change, run:
 
    ```sh
    yarn up -R @oai/build-infra
    yarn install --immutable
    ```
 
-6. Run the consumer's relevant tests, validation, and builds.
-7. Commit the consumer repository's `yarn.lock` update.
+7. Run the consumer's relevant tests, validation, and builds.
+8. Commit the consumer repository's `yarn.lock` update.
 
 The consumer `package.json` should keep requesting
 `git+https://github.com/OAI/build-infra.git#main`. The consumer
@@ -123,6 +137,40 @@ The consumer `package.json` should keep requesting
 from it. That commit is intentional: immutable installs do not silently change
 behavior when `OAI/build-infra` moves forward. `yarn up -R` refreshes the
 resolution without changing `package.json`.
+
+## Build-Infra Releases
+
+Build-infra is not published to npm. Stable semantic-version tags identify the
+commits approved for use by specification repositories; untagged commits on
+`main` are release candidates.
+
+For each release:
+
+1. Choose the next version using the compatibility rules in the README.
+2. Update `package.json` and run:
+
+   ```sh
+   yarn install
+   yarn install --immutable
+   yarn test
+   ```
+
+3. Commit and merge the version change through a pull request.
+4. Run **Release build-infra** from the GitHub Actions page, selecting `main`.
+5. Confirm that the package tests and downstream qualification matrix passed.
+6. Review and approve the `build-infra-release` environment deployment.
+7. Confirm that the resulting annotated `vX.Y.Z` tag points to the qualified
+   commit.
+
+The workflow reads the version from `package.json`; the person running it does
+not type the version a second time. `yarn release:check` verifies the package
+metadata, selected branch and commit, and absence of the proposed tag before
+the expensive downstream qualification begins.
+
+Repository administrators must configure the protected
+`build-infra-release` environment and the immutable `v*` tag ruleset described
+in the README before the first release. Never force-update or delete a release
+tag. Correct a bad release with a new patch release instead.
 
 ### Yarn Lockfile And Security Settings
 

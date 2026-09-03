@@ -1,6 +1,7 @@
 {
   "name": "@oai/build-infra",
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "private": true,
   "description": "OpenAPI Initiative specification build and test infrastructure",
   "author": {
     "name": "OpenAPI Initiative TSC",
@@ -37,6 +38,8 @@
     "./vitest-config": "./src/vitest-config.mjs"
   },
   "scripts": {
+    "qualify-consumer": "node scripts/qualify-consumer.mjs",
+    "release:check": "node scripts/check-release.mjs",
     "test": "vitest run"
   },
   "dependencies": {

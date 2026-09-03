@@ -354,8 +354,9 @@ regressions. Useful examples:
 
 | Test file | What it documents |
 | --------- | ----------------- |
-| `tests/consumer/git-dependency.test.mjs` | The normal integration path: Yarn installs build-infra from a Git branch, records an exact commit, keeps that lock stable in hardened mode while `main` advances or differs, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
+| `tests/consumer/git-dependency.test.mjs` | The intended released-package integration path: Yarn selects compatible semantic-version Git tags, ignores untagged and incompatible releases, records an immutable Git object, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
 | `tests/consumer/installed-package.test.mjs` | How all public command-line tools behave from an installed `node_modules` package layout. |
+| `tests/qualification/qualify-consumer.test.mjs` | How candidate qualification selects an exact build-infra commit and chooses validation, test, build, and release checks from a consumer repository's contents and scripts. |
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
 | `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
 | `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
@@ -366,6 +367,103 @@ When adding behavior to build-infra, prefer adding or extending one of these
 consumer-shaped fixture tests. A test that runs without any checked-out
 specification repository is much easier for future maintainers to trust and run
 locally.
+
+### Qualifying A Candidate In Real Consumers
+
+Self-contained tests cannot cover every combination of content and branch
+history in the specification repositories. Before treating a build-infra commit
+as release-worthy, run the **Qualify build-infra candidate** workflow from the
+GitHub Actions page.
+
+The optional workflow input is a full commit SHA from `OAI/build-infra`. If it
+is empty, the workflow tests the commit selected when the workflow is started.
+The commit must already be reachable from the `OAI/build-infra` repository so
+Yarn can install it by its exact SHA.
+
+The workflow uses disposable checkouts of:
+
+* `main`, `dev`, `v3.1-dev`, `v3.2-dev`, and `v3.3-dev` in
+  `OAI/OpenAPI-Specification`;
+* `main` in `OAI/sig-lifecycle`; and
+* `main` and `v1.0-dev` in `OAI/sig-security`.
+
+For each checkout it installs the exact candidate, immediately verifies that
+the resulting lockfile can be installed immutably, and then runs the validation,
+test, published build, and source build commands that the repository supports.
+The OpenAPI version-development branches also exercise release adjustment on a
+temporary `vX.Y.999-rel` branch and verify that the new specification and editor
+snapshot are staged. The SIG repositories do not yet have a published
+`versions/` tree, so their first-release behavior is not part of this check.
+
+This workflow is manual because it performs several full consumer builds and
+uses networked repository checkouts. It complements `yarn test`; it does not
+replace the fast tests required on every build-infra pull request.
+
+The same runner can be used locally against a disposable consumer clone:
+
+```sh
+yarn qualify-consumer \
+  --consumer=/tmp/OpenAPI-Specification \
+  --candidate=<full-build-infra-commit-sha> \
+  --base=v3.3-dev \
+  --release-version=3.3.999
+```
+
+The runner rewrites `package.json` and `yarn.lock`. When a release version is
+provided, it also commits that temporary dependency update, creates a release
+branch, and stages release output. Never point it at a working checkout that
+contains work you need to keep.
+
+## Releasing Build-Infra
+
+Build-infra is installed directly from GitHub and is never published to npm.
+`package.json` therefore sets `private` to `true`, and an immutable `vX.Y.Z` Git
+tag identifies each released version.
+
+The `main` branch contains candidates. Merging a pull request to `main` does not
+release it. A commit becomes release-worthy only when the manually triggered
+**Release build-infra** workflow successfully creates its version tag.
+
+Use semantic versions to communicate compatibility:
+
+* Patch releases contain fixes and dependency updates that do not change the
+  consumer-facing command or configuration contract.
+* Minor releases add backward-compatible commands or configuration options.
+* Major releases change existing commands, configuration, or runtime
+  requirements incompatibly.
+
+Prepare and publish a release as follows:
+
+1. Change `version` in `package.json` to the intended stable `X.Y.Z` version.
+2. Run `yarn install` because the package manifest changed, followed by
+   `yarn install --immutable` and `yarn test`.
+3. Commit the version change through the normal pull-request process.
+4. After it merges, open GitHub Actions, choose **Release build-infra**, select
+   `main`, and run the workflow.
+5. Wait for the package tests and all downstream consumer qualification jobs.
+6. Approve the `build-infra-release` environment deployment when GitHub asks.
+7. Verify that the workflow created the annotated `vX.Y.Z` tag on the exact
+   commit it tested.
+
+The workflow refuses prerelease version strings, npm-publishable package
+metadata, non-`main` runs, mismatched commits, and reused tags. It tests and tags
+the commit selected when the workflow starts, even if `main` advances while its
+downstream jobs are running.
+
+Never move, replace, or reuse a release tag. If a released version is faulty,
+revert or fix the problem on `main` and publish a new patch version.
+
+### One-Time GitHub Configuration
+
+A repository administrator must create an environment named
+`build-infra-release` under **Settings > Environments** and assign its required
+reviewers. Without that protection, the final workflow job will not pause for
+human approval.
+
+Also create a tag ruleset for `v*` under **Settings > Rules > Rulesets**. Prevent
+tag updates and deletions, while allowing the release workflow to create new
+tags. The exact bypass settings depend on the repository's organization policy,
+so verify the first release with an administrator present.
 
 To test changes in a specification repository before pushing build-infra, use a
 temporary local dependency in that repository:

@@ -10,6 +10,11 @@ const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "
 const yarnConfig = readFileSync(join(packageRoot, ".yarnrc.yml"), "utf8");
 
 describe("package manager policy", () => {
+  test("uses stable release metadata and cannot be published to npm", () => {
+    expect(packageJson.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(packageJson.private).toBe(true);
+  });
+
   test("pins Yarn and uses the node_modules linker required by shell commands", () => {
     expect(packageJson.packageManager).toBe("yarn@4.18.0");
     expect(yarnConfig).toMatch(/^nodeLinker: node-modules$/m);
