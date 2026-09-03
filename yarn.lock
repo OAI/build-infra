@@ -276,7 +276,7 @@ __metadata:
     highlight.js: "npm:11.12.0"
     markdown-it: "npm:15.0.1"
     markdownlint-cli2: "npm:0.23.2"
-    respec: "npm:37.3.5"
+    respec: "npm:37.3.6"
     vitest: "npm:4.1.11"
     yaml: "npm:2.9.0"
     yargs: "npm:18.1.0"
@@ -2145,7 +2145,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^18.0.10":
+"marked@npm:^18.0.11":
   version: 18.0.11
   resolution: "marked@npm:18.0.11"
   bin:
@@ -3074,7 +3074,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"puppeteer@npm:^25.8.0":
+"puppeteer@npm:^25.9.0":
   version: 25.9.0
   resolution: "puppeteer@npm:25.9.0"
   dependencies:
@@ -3159,19 +3159,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"respec@npm:37.3.5":
-  version: 37.3.5
-  resolution: "respec@npm:37.3.5"
+"respec@npm:37.3.6":
+  version: 37.3.6
+  resolution: "respec@npm:37.3.6"
   dependencies:
     finalhandler: "npm:^2.1.1"
-    marked: "npm:^18.0.10"
-    puppeteer: "npm:^25.8.0"
+    marked: "npm:^18.0.11"
+    puppeteer: "npm:^25.9.0"
     sade: "npm:^1.8.1"
     serve-static: "npm:^2.2.1"
   bin:
     respec: tools/respec2html.js
     respec2html: tools/respec2html.js
-  checksum: 10c0/fabf37dd2f22760e8886e2450010b4257e9930844296b614f5364b82fcc662ac43d9a88036486d393cebf81c1d2c3adf1d71b23d2e8cb715fa8a54cacf2bf997
+  checksum: 10c0/1c10000f5c5d6accc8d7c924b331cb83bdb5dc5a8bbb1c96c739d5887f87e907041c852f0846d8bcbd67db0c7982dbd09d97dcf7343e2c23c30dfedff82eef46
   languageName: node
   linkType: hard
 
