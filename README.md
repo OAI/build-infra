@@ -26,6 +26,10 @@ It also exports small helper modules for Vitest and schema tests, so
 specification repositories do not need to depend directly on Vitest, Hyperjump,
 ReSpec, markdownlint, linkspector, or YAML tooling.
 
+`oai-spec-build` treats ReSpec errors as build failures. ReSpec warnings remain
+visible but do not stop a build; errors such as unresolved bibliographic
+references stop the command before it publishes incomplete HTML.
+
 ## Repository Shape Expected By The Tools
 
 The tools assume the same broad layout in every specification repository:

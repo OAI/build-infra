@@ -95,7 +95,7 @@ for specification in $specifications; do
   echo === Building $version to $destination
 
   node "$SCRIPT_DIR/md2html.js" --spec-config "$CONFIG_FILE" --maintainers "$maintainers" "$specification" "$allVersions" > "$tempfile"
-  "$RESPEC_BIN" --no-sandbox --use-local --src $tempfile --out $tempfile2
+  "$RESPEC_BIN" --no-sandbox --use-local --haltonerror --src $tempfile --out $tempfile2
   # remove unwanted Google Tag Manager and Google Analytics scripts
   sed -e 's/<script type="text\/javascript" async="" src="https:\/\/www.google-analytics.com\/analytics.js"><\/script>//' \
       -e 's/<script type="text\/javascript" async="" src="https:\/\/www.googletagmanager.com\/gtag\/js?id=G-[^"]*"><\/script>//' \
