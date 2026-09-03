@@ -14,6 +14,12 @@ describe("package exports", () => {
     expect(schemaVitest.registerSchema).toBeTypeOf("function");
     expect(schemaVitest.toMatchJsonSchema).toBeTypeOf("function");
     expect(openApi30.validate).toBeTypeOf("function");
+    expect(openApi30.contentTypeParser.parse).toBeTypeOf("function");
+    expect(openApi30.contentTypeParser.parse("application/schema+yaml; schema=https://example.com/schema"))
+      .toMatchObject({
+        type: "application/schema+yaml",
+        parameters: { schema: "https://example.com/schema" }
+      });
     expect(openApi30.YAML).toBeTypeOf("object");
     expect(vitestConfig.createVitestConfig).toBeTypeOf("function");
     expect(vitestConfig.default).toBeTypeOf("object");

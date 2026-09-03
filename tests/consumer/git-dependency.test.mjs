@@ -127,13 +127,16 @@ describe("Yarn Git dependency installation", () => {
           'if (buildInfraRequire.resolve("@hyperjump/json-schema") !== coverageRequire.resolve("@hyperjump/json-schema")) throw new Error("duplicate Hyperjump JSON Schema runtimes");',
           'const testHelpers = await import("@oai/build-infra/test");',
           'const schemaHelpers = await import("@oai/build-infra/schema/vitest");',
-          'console.log(typeof testHelpers.test, typeof schemaHelpers.registerSchema);'
+          'const openApi30Helpers = await import("@oai/build-infra/schema/openapi-3-0-test");',
+          'const contentType = openApi30Helpers.contentTypeParser.parse("application/schema+yaml; schema=https://example.com/schema");',
+          'if (contentType.parameters.schema !== "https://example.com/schema") throw new Error("content-type parser export is broken");',
+          'console.log(typeof testHelpers.test, typeof schemaHelpers.registerSchema, typeof openApi30Helpers.contentTypeParser.format);'
         ].join(" ")
       ],
       { cwd: consumer, encoding: "utf8" }
     );
 
-    expect(output.trim()).toBe("function function");
+    expect(output.trim()).toBe("function function function");
   }, 30_000);
 });
 
