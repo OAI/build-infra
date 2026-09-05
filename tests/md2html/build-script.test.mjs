@@ -37,6 +37,13 @@ describe("md2html build script", () => {
     expect(html).toContain("Source Editor");
     expect(html).not.toContain("Fixture Maintainer");
   });
+
+  test("treats ReSpec errors as build failures", () => {
+    const repo = createBuildFixture();
+
+    expect(() => runBuild(repo, ["src"], { FIXTURE_RESPEC_ERROR: "1" }))
+      .toThrow(/ReSpec fixture error/);
+  });
 });
 
 function createBuildFixture() {
@@ -65,7 +72,7 @@ function createBuildFixture() {
   writeFileSync(join(repo, "src/spec.md"), specMarkdown("1.2.0", "TBA"));
   writeFileSync(join(repo, "node_modules/respec/package.json"), JSON.stringify({ name: "respec", version: "0.0.0" }));
   writeFileSync(join(repo, "node_modules/respec/builds/respec-w3c.js"), "/* respec fixture */\n");
-  writeBin(join(repo, "node_modules/.bin/respec"), "while [ \"$#\" -gt 0 ]; do case \"$1\" in --src) src=\"$2\"; shift 2 ;; --out) out=\"$2\"; shift 2 ;; *) shift ;; esac; done; cp \"$src\" \"$out\"");
+  writeBin(join(repo, "node_modules/.bin/respec"), "halt=false; while [ \"$#\" -gt 0 ]; do case \"$1\" in --haltonerror) halt=true; shift ;; --src) src=\"$2\"; shift 2 ;; --out) out=\"$2\"; shift 2 ;; *) shift ;; esac; done; if [ \"${FIXTURE_RESPEC_ERROR:-0}\" = 1 ] && [ \"$halt\" = true ]; then echo 'ReSpec fixture error' >&2; exit 1; fi; cp \"$src\" \"$out\"");
 
   return repo;
 }
@@ -74,12 +81,13 @@ function specMarkdown(version, date) {
   return `# Fixture Specification\n\n## Version ${version}\n\n| Version | Date | Notes |\n| ---- | ---- | ---- |\n| ${version} | ${date} | Fixture release |\n`;
 }
 
-function runBuild(repo, args = []) {
+function runBuild(repo, args = [], env = {}) {
   return execFileSync("bash", [join(packageRoot, "src/md2html/build.sh"), ...args], {
     cwd: repo,
     encoding: "utf8",
     env: {
       ...process.env,
+      ...env,
       PATH: `${join(repo, "node_modules/.bin")}:${process.env.PATH}`
     }
   });
