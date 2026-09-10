@@ -204,7 +204,10 @@ function preface(title,options) {
         });
     }
     if (participateLinks.length > 0) {
-        otherLinks.push({ key: "Participate", data: participateLinks });
+        otherLinks.push({ key: "Participate", data: participateLinks.map(link => ({
+            ...link,
+            href: link.href ? link.href.replace('{version}', options.subtitle) : link.href
+        }))});
     }
 
     const respec = {
