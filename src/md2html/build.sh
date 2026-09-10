@@ -59,6 +59,10 @@ else
   allVersions=""
 fi
 
+if [ -f "versions/2.0.md" ]; then
+  allVersions="$allVersions"$'\n'"versions/2.0.md"
+fi
+
 if [ -z "$COMMAND" ]; then
   specifications=$allVersions
 elif [ "$COMMAND" = "latest" ]; then
