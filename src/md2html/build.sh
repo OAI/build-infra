@@ -115,7 +115,7 @@ for specification in $specifications; do
     fi
   fi
 
-  if [ "$COMMAND" != "src" ] && [ "$minorVersion" != "$lastMinor" ]; then
+  if [ "$COMMAND" != "src" ] && [ "$minorVersion" != "$version" ] && [ "$minorVersion" != "$lastMinor" ]; then
     ln -sf $(basename "$destination") "$deploydir/v$minorVersion.html"
     lastMinor=$minorVersion
   fi
