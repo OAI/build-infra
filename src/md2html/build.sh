@@ -59,6 +59,10 @@ else
   allVersions=""
 fi
 
+if [ -f "versions/2.0.md" ]; then
+  allVersions="$allVersions"$'\n'"versions/2.0.md"
+fi
+
 if [ -z "$COMMAND" ]; then
   specifications=$allVersions
 elif [ "$COMMAND" = "latest" ]; then
@@ -111,7 +115,7 @@ for specification in $specifications; do
     fi
   fi
 
-  if [ "$COMMAND" != "src" ] && [ "$minorVersion" != "$lastMinor" ]; then
+  if [ "$COMMAND" != "src" ] && [ "$minorVersion" != "$version" ] && [ "$minorVersion" != "$lastMinor" ]; then
     ln -sf $(basename "$destination") "$deploydir/v$minorVersion.html"
     lastMinor=$minorVersion
   fi
