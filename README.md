@@ -169,8 +169,8 @@ so consumers receive the versions tested by build-infra.
 
 Dependabot calls the JavaScript package ecosystem `npm`, even when the project
 uses Yarn, and opens pull requests that update `package.json` and `yarn.lock`.
-After an update is reviewed, merged, and pushed to `OAI/build-infra`, update each
-consumer repository with:
+After an update is reviewed, merged, and pushed to `OAI/build-infra`, start from
+the consumer repository's `main` branch and update it with:
 
 ```sh
 yarn up -R @oai/build-infra
@@ -186,10 +186,12 @@ For repositories that only have source builds, also run:
 yarn build-src
 ```
 
-Commit the resulting `yarn.lock` change. `yarn up -R` re-resolves the existing
-`#main` request without changing `package.json`; the lockfile should move to the
-new build-infra commit. The self-contained Git-consumer test exercises this same
-update procedure.
+Commit the resulting `yarn.lock` change and merge it back to `main`. `yarn up -R`
+re-resolves the existing `#main` request without changing `package.json`; the
+lockfile should move to the new build-infra commit. Replicate the same lockfile
+update to active development branches, either manually or by merging the
+automatically opened pull requests, depending on the repository configuration.
+The self-contained Git-consumer test exercises this same update procedure.
 
 ### Updating Node.js Or Yarn
 
