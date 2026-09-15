@@ -41,6 +41,12 @@ jobs:
           - repository: OAI/OpenAPI-Specification
             ref: v3.3-dev
             release_version: "3.3.999"
+          - repository: OAI/Overlay-Specification
+            ref: main
+            release_version: ""
+          - repository: OAI/Overlay-Specification
+            ref: v1.2-dev
+            release_version: "1.2.999"
           - repository: OAI/sig-lifecycle
             ref: main
             release_version: ""
