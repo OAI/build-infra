@@ -129,26 +129,29 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hyperjump/json-schema-coverage@npm:1.2.1":
-  version: 1.2.1
-  resolution: "@hyperjump/json-schema-coverage@npm:1.2.1"
+"@hyperjump/json-schema-coverage@npm:1.2.2":
+  version: 1.2.2
+  resolution: "@hyperjump/json-schema-coverage@npm:1.2.2"
   dependencies:
     "@hyperjump/browser": "npm:^1.3.1"
     "@hyperjump/json-schema": "npm:^1.17.2"
     "@hyperjump/uri": "npm:^1.3.1"
-    content-type: "npm:^1.0.5"
+    content-type: "npm:^3.0.0"
     ignore: "npm:^7.0.5"
     istanbul-lib-coverage: "npm:^3.2.2"
     istanbul-lib-report: "npm:^3.0.1"
     istanbul-reports: "npm:^3.1.7"
     moo: "npm:^0.5.2"
     pathe: "npm:^2.0.3"
+    picocolors: "npm:^1.1.1"
     picomatch: "npm:^4.0.2"
     tinyglobby: "npm:^0.2.14"
     vfile: "npm:^6.0.3"
     yaml: "npm:^2.8.0"
-    yaml-unist-parser: "npm:^2.0.5"
-  checksum: 10c0/0913d609eafd788dc189534a208811fa22024f79cd428bc7a6925ff16ffaa2d33780bea554927862dbd552106f9a59f3857b28cf129c6a083c401b35b320a354
+    yaml-unist-parser: "npm:^3.1.0"
+  peerDependencies:
+    vitest: ^4.0.0
+  checksum: 10c0/0a6e52affa95d09a531bf2bec67c5fc79d4b1ccbb0e3438f17d2ba6a62d3c208ee604358f76e6f64e2ae190e7e5d9257301e9e90e012c30baed846c21949ce93
   languageName: node
   linkType: hard
 
@@ -267,7 +270,7 @@ __metadata:
   dependencies:
     "@hyperjump/browser": "npm:1.5.0"
     "@hyperjump/json-schema": "npm:1.17.8"
-    "@hyperjump/json-schema-coverage": "npm:1.2.1"
+    "@hyperjump/json-schema-coverage": "npm:1.2.2"
     "@umbrelladocs/linkspector": "npm:0.5.6"
     "@vitest/coverage-v8": "npm:5.0.0"
     c8: "npm:12.0.0"
@@ -961,7 +964,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"content-type@npm:3.0.0":
+"content-type@npm:3.0.0, content-type@npm:^3.0.0":
   version: 3.0.0
   resolution: "content-type@npm:3.0.0"
   checksum: 10c0/4ecb17b151ef272fe3143d2414b78edeea9c7baa45724e2bbcbfc0dbd4bbc5b68d654733df6df2d9c600016af841a25aa26b0a4d290e366b5120705796072d98
@@ -3960,28 +3963,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yaml-unist-parser@npm:^2.0.5":
-  version: 2.2.1
-  resolution: "yaml-unist-parser@npm:2.2.1"
+"yaml-unist-parser@npm:^3.1.0":
+  version: 3.2.0
+  resolution: "yaml-unist-parser@npm:3.2.0"
   dependencies:
-    yaml: "npm:^1.10.2"
-  checksum: 10c0/7a1de393f8937e52df2f1e5341f8a06bad20f329a2b5c19aca5d7a898b139f5cac54c4dc21634d5f94ee2c4fc71fee7ef2075dec4949ddf42ee9a84e072b4f91
+    yaml: "npm:^2.8.2"
+  checksum: 10c0/bbd3a33b4806afe71cf8246d1ffa088d93913a57de97582c963a6f2e736aaa346457bcadb4e63497605c9a8100c3effae55f9e5a38796e57190d3fa69839ae0e
   languageName: node
   linkType: hard
 
-"yaml@npm:2.9.0, yaml@npm:^2.8.0":
+"yaml@npm:2.9.0, yaml@npm:^2.8.0, yaml@npm:^2.8.2":
   version: 2.9.0
   resolution: "yaml@npm:2.9.0"
   bin:
     yaml: bin.mjs
   checksum: 10c0/f340718df45e97a9551b9bf9dac61c80050bc464513b710debfb5067c380c8472e3b67809cffacb4ab5ffb5e66ef9310816c88b05f371cec60abfedd8c88e0a2
-  languageName: node
-  linkType: hard
-
-"yaml@npm:^1.10.2":
-  version: 1.10.3
-  resolution: "yaml@npm:1.10.3"
-  checksum: 10c0/c309ff85a0a569a981d71ab9cf0fef68672a16b9cdf40639d1c3b30034f6cd16ee428602bd6d64ecf006f8c8bee499023cac236538f79898aa99fb5db529a2ed
   languageName: node
   linkType: hard
 

@@ -45,7 +45,7 @@
   "dependencies": {
     "@hyperjump/browser": "1.5.0",
     "@hyperjump/json-schema": "1.17.8",
-    "@hyperjump/json-schema-coverage": "1.2.1",
+    "@hyperjump/json-schema-coverage": "1.2.2",
     "@umbrelladocs/linkspector": "0.5.6",
     "@vitest/coverage-v8": "5.0.0",
     "c8": "12.0.0",
