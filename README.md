@@ -214,6 +214,9 @@ Common fields:
 | `schemas` | YAML schema filenames under `src/schemas/validation/`, in dependency order. |
 | `edDraftURI` | GitHub URL for the repository. |
 | `participateLinks` | Links shown in generated HTML. |
+| `abstractQuestion` | Heading for ReSpec's unnumbered introductory abstract. |
+| `abstractText` | Contents of the introductory abstract unless `extractAbstractFromMarkdown` is enabled. |
+| `extractAbstractFromMarkdown` | When `true`, use the contents of the document's `## Abstract` section as ReSpec's unnumbered abstract and omit that section from the numbered body. Defaults to `false`. |
 | `maintainersPath` | Maintainer/editor Markdown file to use when both source and published builds share one file. |
 | `sourceMaintainersPath` | Maintainer/editor Markdown file for `oai-spec-build src`; defaults to `maintainersPath`, then `EDITORS.md`. |
 | `publishedMaintainersPath` | Maintainer/editor Markdown file for published `versions/*.md` builds; defaults to `versions/X.Y.Z-editors.md`. |
@@ -221,6 +224,14 @@ Common fields:
 Published builds discover `versions/X.Y.Z.md` files for any numeric major
 version, including `1.x` specifications. For each minor version, the newest
 published patch also gets a `vX.Y.html` alias.
+
+`extractAbstractFromMarkdown` is a compatibility option for repositories whose
+historical publishing process moved a Markdown Abstract into ReSpec's special
+introductory abstract. When enabled, every document being built must contain a
+non-empty `## Abstract` section. Its contents override `abstractText`, while
+`abstractQuestion` still supplies the introductory heading. Set
+`metaDescription` explicitly when the Markdown includes formatting or ReSpec
+bibliography references that would not be suitable for an HTML meta tag.
 
 Release-related fields live under `release`:
 

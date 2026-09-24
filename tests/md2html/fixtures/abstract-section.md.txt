@@ -1,0 +1,17 @@
+# Overlay Specification
+
+## Abstract
+
+The extracted abstract describes [[OpenAPI]].
+
+## Version 1.2.0
+
+This document is licensed under the Apache License, Version 2.0.
+
+## Introduction
+
+The numbered specification begins here.
+
+| Version | Date |
+| ------- | ---------- |
+| 1.2.0   | 2026-09-24 |
