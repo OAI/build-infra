@@ -162,8 +162,9 @@ const slug = specConfig.slug || 'spec';
 const shortName = specConfig.shortName || slug.toUpperCase();
 const titleName = specConfig.titleName || shortName;
 const abstractQuestion = specConfig.abstractQuestion || `What is the ${shortName}?`;
-const abstractText = specConfig.abstractText || '';
-const metaDescription = specConfig.metaDescription || abstractText;
+const extractAbstractFromMarkdown = specConfig.extractAbstractFromMarkdown === true;
+let abstractText = specConfig.abstractText || '';
+let metaDescription = specConfig.metaDescription || abstractText;
 const copyright = specConfig.copyright || 'the Linux Foundation';
 const edDraftURI = specConfig.edDraftURI || '';
 const logo = specConfig.logo || null;
@@ -304,6 +305,49 @@ function getPublishDate(m) {
     return result;
 }
 
+function extractMarkdownAbstract(lines) {
+    let start = -1;
+    let end = lines.length;
+    let fence = null;
+
+    for (let i = 0; i < lines.length; i++) {
+        const fenceMatch = lines[i].match(/^\s*(`{3,}|~{3,})/);
+        if (fenceMatch) {
+            const marker = fenceMatch[1][0];
+            if (!fence) fence = marker;
+            else if (fence === marker) fence = null;
+            continue;
+        }
+        if (fence) continue;
+
+        const heading = lines[i].match(/^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/);
+        if (!heading) continue;
+
+        const level = heading[1].length;
+        if (start < 0 && level === 2 && heading[2] === 'Abstract') {
+            start = i;
+        }
+        else if (start >= 0 && level <= 2) {
+            end = i;
+            break;
+        }
+    }
+
+    if (start < 0) {
+        throw new Error('extractAbstractFromMarkdown is enabled, but no "## Abstract" section was found');
+    }
+
+    const abstract = lines.slice(start + 1, end).join('\n').trim();
+    if (!abstract) {
+        throw new Error('extractAbstractFromMarkdown is enabled, but the "## Abstract" section is empty');
+    }
+
+    return {
+        abstract,
+        lines: lines.map((line, index) => index >= start && index < end ? '' : line),
+    };
+}
+
 if (argv.maintainers) {
     doMaintainers();
 }
@@ -313,6 +357,13 @@ let s = fs.readFileSync(argv._[0],'utf8');
 argv.publishDate = getPublishDate(s);
 
 let lines = s.split(/\r?\n/);
+
+if (extractAbstractFromMarkdown) {
+    const extracted = extractMarkdownAbstract(lines);
+    abstractText = extracted.abstract;
+    lines = extracted.lines;
+    if (!specConfig.metaDescription) metaDescription = abstractText;
+}
 
 let prevHeading = 0;
 let inTOC = false;
