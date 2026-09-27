@@ -59,7 +59,7 @@
     "vite": "8.3.0",
     "vitest": "5.0.1",
     "yaml": "2.9.1",
-    "yargs": "18.1.0"
+    "yargs": "18.2.0"
   },
   "dependenciesMeta": {
     "puppeteer": {
