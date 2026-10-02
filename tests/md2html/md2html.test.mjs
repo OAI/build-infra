@@ -1,7 +1,5 @@
 import {
   mkdtempSync,
-  readdirSync,
-  readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -9,33 +7,12 @@ import { execFile } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, test, expect } from "vitest";
-import assert from "node:assert";
+import { registerMd2htmlFixtureTests } from "@oai/build-infra/test/md2html";
 
 const folder = "./tests/md2html/fixtures/";
-describe("md2html", async () => {
-  readdirSync(folder, { withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.md$/.test(entry.name))
-    .forEach((entry) => {
-      test(entry.name, async () => {
-        const expected = readFileSync(
-          folder + entry.name.replace(".md", ".html"),
-          "utf8",
-        ); 
-        const output = await md2html(
-          [
-            "--spec-config",
-            "spec.config.json",
-            "--maintainers",
-            entry.name.replace(".md", ".maintainers"),
-            entry.name,
-            "path/31.0.0.md\npath/30.0.1.md\npath/30.0.0.md",
-          ],
-          folder,
-        );
-        expect(output.stdout).to.equal(expected);
-      });
-    });
+registerMd2htmlFixtureTests({ configPath: "tests/md2html/spec.config.json" });
 
+describe("md2html", async () => {
   test("can use a Markdown Abstract as ReSpec's unnumbered abstract", async () => {
     const temp = mkdtempSync(join(tmpdir(), "oai-markdown-abstract-"));
     try {
