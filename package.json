@@ -35,6 +35,7 @@
     "./schema/vitest": "./src/schema/vitest.mjs",
     "./schema/test-config": "./src/schema/test-config.mjs",
     "./test": "./src/test/index.mjs",
+    "./test/md2html": "./src/test/md2html.mjs",
     "./vitest-config": "./src/vitest-config.mjs"
   },
   "scripts": {
