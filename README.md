@@ -65,7 +65,7 @@ Repositories that keep maintainers in a different file, such as
        "node": ">=24 <25"
      },
      "dependencies": {
-       "@oai/build-infra": "git+https://github.com/OAI/build-infra.git#main"
+       "@oai/build-infra": "git+https://github.com/OAI/build-infra.git#semver:^1.0.0"
      },
      "dependenciesMeta": {
        "puppeteer": {
@@ -156,10 +156,11 @@ Repositories that keep maintainers in a different file, such as
    `yarn install --immutable` for routine local installs and in GitHub Actions.
    It fails instead of silently changing an out-of-date lockfile.
 
-The lockfile is important. `package.json` intentionally requests the `main`
-branch of `OAI/build-infra`, while `yarn.lock` records the exact Git commit
-resolved from that branch. This makes immutable installs repeatable without
-requiring maintainers to copy a commit hash into `package.json`.
+The lockfile is important. `package.json` requests compatible released
+build-infra tags, while `yarn.lock` records the exact Git commit selected from
+that range. Untagged commits on `main` are release candidates and are not
+selected. Immutable installs therefore remain repeatable without requiring
+maintainers to copy a commit hash into `package.json`.
 
 ## Keeping Dependencies Up To Date
 
@@ -169,11 +170,19 @@ so consumers receive the versions tested by build-infra.
 
 Dependabot calls the JavaScript package ecosystem `npm`, even when the project
 uses Yarn, and opens pull requests that update `package.json` and `yarn.lock`.
-After an update is reviewed, merged, and pushed to `OAI/build-infra`, start from
-the consumer repository's `main` branch and update it with:
+Creating a build-infra release tag automatically opens an update pull request
+against `main` in each configured consumer repository. The pull request updates
+the released SemVer selector in `package.json` and records the release's exact
+Git commit in `yarn.lock`. Review it through the consumer's normal CI and
+pull-request process.
+
+To perform or repair the same update manually, start from the consumer
+repository's `main` branch, set `@oai/build-infra` in `package.json` to the
+released range (for example,
+`git+https://github.com/OAI/build-infra.git#semver:^1.1.0`), and run:
 
 ```sh
-yarn up -R @oai/build-infra
+yarn install
 yarn install --immutable
 yarn test
 yarn validate-markdown
@@ -186,12 +195,11 @@ For repositories that only have source builds, also run:
 yarn build-src
 ```
 
-Commit the resulting `yarn.lock` change and merge it back to `main`. `yarn up -R`
-re-resolves the existing `#main` request without changing `package.json`; the
-lockfile should move to the new build-infra commit. Replicate the same lockfile
-update to active development branches, either manually or by merging the
-automatically opened pull requests, depending on the repository configuration.
-The self-contained Git-consumer test exercises this same update procedure.
+Commit the resulting `package.json` and `yarn.lock` changes and merge them back
+to `main`. Replicate the update to active development branches using each
+repository's normal main-to-development synchronization process. The
+self-contained Git-consumer test verifies that Yarn selects only compatible
+released tags and records their exact commits.
 
 ### Updating Node.js Or Yarn
 
@@ -423,11 +431,12 @@ regressions. Useful examples:
 
 | Test file | What it documents |
 | --------- | ----------------- |
-| `tests/consumer/git-dependency.test.mjs` | The intended released-package integration path: Yarn selects compatible semantic-version Git tags, ignores untagged and incompatible releases, records an immutable Git object, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
+| `tests/consumer/git-dependency.test.mjs` | The intended released-package integration path: Yarn selects compatible semantic-version Git tags, ignores untagged and incompatible releases, records an immutable Git object, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers with a deliberately nested dependency layout to verify that schema tests share one Hyperjump runtime. |
 | `tests/consumer/installed-package.test.mjs` | How all public command-line tools behave from an installed `node_modules` package layout. |
 | `tests/qualification/qualify-consumer.test.mjs` | How candidate qualification selects an exact build-infra commit and chooses validation, test, build, and release checks from a consumer repository's contents and scripts. |
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
 | `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
+| `tests/release/update-consumer-release.test.mjs` | How a release tag becomes a consumer SemVer dependency update, including validation and repeatable retries. |
 | `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
 | `tests/package/package-manager.test.mjs` | The Yarn version, `node_modules` linker, exact direct dependencies, and Puppeteer install-script policy required by consumers. |
 | `tests/package/exports.test.mjs` | Public helper modules that consumer test suites can import. |
@@ -514,6 +523,8 @@ Prepare and publish a release as follows:
 6. Approve the `build-infra-release` environment deployment when GitHub asks.
 7. Verify that the workflow created the annotated `vX.Y.Z` tag on the exact
    commit it tested.
+8. Verify that **Update downstream consumers** opened an update pull request
+   against each consumer's `main` branch.
 
 The workflow refuses prerelease version strings, npm-publishable package
 metadata, non-`main` runs, mismatched commits, and reused tags. It tests and tags
@@ -534,6 +545,32 @@ Also create a tag ruleset for `v*` under **Settings > Rules > Rulesets**. Preven
 tag updates and deletions, while allowing the release workflow to create new
 tags. The exact bypass settings depend on the repository's organization policy,
 so verify the first release with an administrator present.
+
+The downstream update workflow needs cross-repository credentials because a
+workflow's normal `GITHUB_TOKEN` cannot write to other repositories. Follow
+GitHub's [GitHub App authentication guide](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow)
+to create an App dedicated to build-infra dependency updates with these
+repository permissions:
+
+* **Contents:** Read and write
+* **Pull requests:** Read and write
+
+Install it only on the downstream repositories currently listed in
+`.github/workflows/update-consumers.yml`. In `OAI/build-infra`, configure:
+
+* repository or organization variable `BUILD_INFRA_UPDATE_APP_CLIENT_ID` with
+  the App's client ID;
+* Actions secret `BUILD_INFRA_UPDATE_APP_PRIVATE_KEY` with the App's private
+  key.
+
+The workflow requests a token scoped to one consumer at a time. Pull requests
+created with the App token trigger the consumer's ordinary pull-request CI.
+The release workflow calls the updater explicitly after creating its tag
+because [GitHub suppresses new workflow runs for most events produced by the
+normal `GITHUB_TOKEN`](https://docs.github.com/en/actions/concepts/security/github_token).
+A tag pushed by another authorized identity also triggers the updater directly.
+A maintainer can retry a partial failure from the **Update downstream
+consumers** workflow page by supplying the existing `vX.Y.Z` tag.
 
 To test changes in a specification repository before pushing build-infra, use a
 temporary local dependency in that repository:

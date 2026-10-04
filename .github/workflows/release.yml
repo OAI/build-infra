@@ -80,3 +80,13 @@ jobs:
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
             tag --annotate "$tag" "$RELEASE_COMMIT" --message="Release $RELEASE_VERSION"
           git push origin "refs/tags/$tag"
+
+  update-consumers:
+    name: Open downstream update pull requests
+    needs:
+      - preflight
+      - tag
+    uses: ./.github/workflows/update-consumers.yml
+    with:
+      release_tag: v${{ needs.preflight.outputs.version }}
+    secrets: inherit

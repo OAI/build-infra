@@ -1,0 +1,172 @@
+name: Update downstream consumers
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_call:
+    inputs:
+      release_tag:
+        description: Canonical build-infra release tag
+        required: true
+        type: string
+    secrets:
+      BUILD_INFRA_UPDATE_APP_PRIVATE_KEY:
+        required: true
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Canonical build-infra release tag to retry
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    name: ${{ matrix.repository }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: build-infra-${{ inputs.release_tag || github.ref_name }}-${{ matrix.repository }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        repository:
+          - OpenAPI-Specification
+          - Overlay-Specification
+          - sig-lifecycle
+          - sig-security
+
+    steps:
+      - name: Create downstream GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.BUILD_INFRA_UPDATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.BUILD_INFRA_UPDATE_APP_PRIVATE_KEY }}
+          owner: OAI
+          repositories: ${{ matrix.repository }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Check out update automation
+        uses: actions/checkout@v7
+        with:
+          path: build-infra
+          ref: ${{ github.sha }}
+
+      - name: Check out released build-infra metadata
+        uses: actions/checkout@v7
+        with:
+          path: released-build-infra
+          ref: ${{ inputs.release_tag || github.ref_name }}
+
+      - name: Check out consumer main branch
+        uses: actions/checkout@v7
+        with:
+          repository: OAI/${{ matrix.repository }}
+          ref: main
+          path: consumer
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.x"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install update-script dependencies
+        working-directory: build-infra
+        run: yarn install --immutable --mode=skip-build
+
+      - name: Select released build-infra version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          release_version="$(node -p "require('./released-build-infra/package.json').version")"
+          node build-infra/scripts/update-consumer-release.mjs \
+            --consumer=consumer \
+            --release-tag="$RELEASE_TAG" \
+            --package-version="$release_version"
+
+      - name: Update and verify consumer lockfile
+        working-directory: consumer
+        env:
+          YARN_ENABLE_HARDENED_MODE: "0"
+          YARN_ENABLE_IMMUTABLE_INSTALLS: "0"
+        run: |
+          yarn install
+          YARN_ENABLE_HARDENED_MODE=1 YARN_ENABLE_IMMUTABLE_INSTALLS=1 yarn install --immutable
+
+      - name: Verify installed release
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          expected="${RELEASE_TAG#v}"
+          actual="$(node -p "require('./consumer/node_modules/@oai/build-infra/package.json').version")"
+          if [ "$actual" != "$expected" ]; then
+            echo "Expected build-infra $expected, but Yarn installed $actual" >&2
+            exit 1
+          fi
+
+      - name: Get GitHub App bot identity
+        id: bot
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          user_id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
+          echo "name=${APP_SLUG}[bot]" >> "$GITHUB_OUTPUT"
+          echo "email=${user_id}+${APP_SLUG}[bot]@users.noreply.github.com" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push dependency update
+        id: update
+        working-directory: consumer
+        env:
+          BOT_EMAIL: ${{ steps.bot.outputs.email }}
+          BOT_NAME: ${{ steps.bot.outputs.name }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          if git diff --quiet -- package.json yarn.lock; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          branch="automation/build-infra-${RELEASE_TAG}"
+          git config user.name "$BOT_NAME"
+          git config user.email "$BOT_EMAIL"
+          git switch -c "$branch"
+          git add package.json yarn.lock
+          git commit -m "Update build-infra to ${RELEASE_TAG}"
+
+          if git ls-remote --exit-code --heads origin "refs/heads/$branch" >/dev/null 2>&1; then
+            git fetch origin "refs/heads/$branch:refs/remotes/origin/$branch"
+          fi
+          git push --force-with-lease origin "HEAD:refs/heads/$branch"
+
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update pull request
+        if: steps.update.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ steps.update.outputs.branch }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+          REPOSITORY: OAI/${{ matrix.repository }}
+        run: |
+          title="Update build-infra to ${RELEASE_TAG}"
+          body="This updates \`@oai/build-infra\` to the qualified ${RELEASE_TAG} release and records its exact Git commit in \`yarn.lock\`.
+
+          The update was generated automatically after the release tag was created. Review and merge it through the repository's normal pull-request and CI process."
+          pull_request="$(gh pr list --repo "$REPOSITORY" --base main --head "$BRANCH" --state open --json url --jq '.[0].url')"
+
+          if [ -n "$pull_request" ]; then
+            gh pr edit "$pull_request" --title "$title" --body "$body"
+          else
+            gh pr create --repo "$REPOSITORY" --base main --head "$BRANCH" --title "$title" --body "$body"
+          fi
