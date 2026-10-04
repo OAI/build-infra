@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 describe("package exports", () => {
   test("public helper modules can be imported by consumer repositories", async () => {
     const testHelpers = await import("@oai/build-infra/test");
+    const md2htmlTests = await import("@oai/build-infra/test/md2html");
     const testConfig = await import("@oai/build-infra/schema/test-config");
     const schemaVitest = await import("@oai/build-infra/schema/vitest");
     const openApi30 = await import("@oai/build-infra/schema/openapi-3-0-test");
@@ -10,6 +11,7 @@ describe("package exports", () => {
 
     expect(testHelpers.test).toBeTypeOf("function");
     expect(testHelpers.expect).toBeTypeOf("function");
+    expect(md2htmlTests.registerMd2htmlFixtureTests).toBeTypeOf("function");
     expect(testConfig.createTestConfig).toBeTypeOf("function");
     expect(schemaVitest.registerSchema).toBeTypeOf("function");
     expect(schemaVitest.toMatchJsonSchema).toBeTypeOf("function");

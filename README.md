@@ -222,6 +222,7 @@ Common fields:
 | `maintainersPath` | Maintainer/editor Markdown file to use when both source and published builds share one file. |
 | `sourceMaintainersPath` | Maintainer/editor Markdown file for `oai-spec-build src`; defaults to `maintainersPath`, then `EDITORS.md`. |
 | `publishedMaintainersPath` | Maintainer/editor Markdown file for published `versions/*.md` builds; defaults to `versions/X.Y.Z-editors.md`. |
+| `tests.md2html` | Repository-owned Markdown-to-HTML snapshot fixtures; see [Markdown Rendering Tests](#markdown-rendering-tests). |
 
 Published builds discover `versions/X.Y.Z.md` files for any numeric major
 version, including `1.x` specifications. For each minor version, the newest
@@ -350,6 +351,57 @@ OAS-style repositories that need custom vocabulary registration can pass
 `vocabularyKeywords` to `createTestConfig`; see the comments in
 `src/schema/test-config.mjs`.
 
+## Markdown Rendering Tests
+
+Rendering behavior depends on each specification's Markdown conventions and
+ReSpec configuration. Consumer repositories should therefore keep their own
+representative inputs and expected HTML, while build-infra supplies the common
+test runner.
+
+Configure the fixture directory in the consumer's root `spec.config.json`:
+
+```json
+{
+  "tests": {
+    "md2html": {
+      "fixtures": "tests/md2html/fixtures",
+      "otherVersions": [
+        "path/31.0.0.md",
+        "path/30.0.1.md",
+        "path/30.0.0.md"
+      ]
+    }
+  }
+}
+```
+
+Then add a small Vitest file, such as `tests/md2html/md2html.test.mjs`:
+
+```js
+import { registerMd2htmlFixtureTests } from "@oai/build-infra/test/md2html";
+
+registerMd2htmlFixtureTests();
+```
+
+For each `<name>.md` in the fixture directory, keep these companion files in
+the same directory:
+
+| File | Purpose |
+| ---- | ------- |
+| `<name>.maintainers` | Maintainer or editor input passed to the renderer. |
+| `<name>.html` | Exact expected renderer output. |
+
+The helper discovers every `.md` fixture and compares the rendered output with
+the corresponding `.html` file byte for byte. `otherVersions` is optional and
+supplies the newline-separated version list used to generate version links.
+By default the renderer uses `spec.config.json` inside the fixture directory;
+set `tests.md2html.config` to a repository-relative path when the fixture
+configuration is elsewhere.
+
+Keep fixtures that encode repository-specific behavior in the consumer. The
+fixtures in `tests/md2html/fixtures` in this repository demonstrate the file
+layout and exercise the same public helper as consumers.
+
 ## Local Development
 
 When working on this package itself:
@@ -379,6 +431,7 @@ regressions. Useful examples:
 | `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
 | `tests/package/package-manager.test.mjs` | The Yarn version, `node_modules` linker, exact direct dependencies, and Puppeteer install-script policy required by consumers. |
 | `tests/package/exports.test.mjs` | Public helper modules that consumer test suites can import. |
+| `tests/md2html/md2html.test.mjs` | How consumers configure repository-owned Markdown inputs, maintainer files, and exact expected HTML through the shared fixture-test helper. |
 
 When adding behavior to build-infra, prefer adding or extending one of these
 consumer-shaped fixture tests. A test that runs without any checked-out
