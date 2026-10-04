@@ -1,8 +1,10 @@
 import { readFile } from "node:fs/promises";
-import { addMediaTypePlugin } from "@hyperjump/browser";
-import { registerSchema } from "@hyperjump/json-schema/draft-2020-12";
-import { buildSchemaDocument, defineVocabulary } from "@hyperjump/json-schema/experimental";
+import { browser, draft202012, experimental } from "./hyperjump-runtime.mjs";
 import YAML from "yaml";
+
+const { addMediaTypePlugin } = browser;
+const { registerSchema } = draft202012;
+const { buildSchemaDocument, defineVocabulary } = experimental;
 
 const parseYamlFromFile = async (filePath) => {
   const text = await readFile(filePath, "utf8");

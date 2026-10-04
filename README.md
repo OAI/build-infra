@@ -431,7 +431,7 @@ regressions. Useful examples:
 
 | Test file | What it documents |
 | --------- | ----------------- |
-| `tests/consumer/git-dependency.test.mjs` | The intended released-package integration path: Yarn selects compatible semantic-version Git tags, ignores untagged and incompatible releases, records an immutable Git object, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers. |
+| `tests/consumer/git-dependency.test.mjs` | The intended released-package integration path: Yarn selects compatible semantic-version Git tags, ignores untagged and incompatible releases, records an immutable Git object, refreshes it with `yarn up -R`, performs an immutable reinstall, and imports public helpers with a deliberately nested dependency layout to verify that schema tests share one Hyperjump runtime. |
 | `tests/consumer/installed-package.test.mjs` | How all public command-line tools behave from an installed `node_modules` package layout. |
 | `tests/qualification/qualify-consumer.test.mjs` | How candidate qualification selects an exact build-infra commit and chooses validation, test, build, and release checks from a consumer repository's contents and scripts. |
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |

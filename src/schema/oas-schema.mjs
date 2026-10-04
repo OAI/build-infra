@@ -1,7 +1,9 @@
-import { registerSchema } from "@hyperjump/json-schema/draft-2020-12";
-import { defineVocabulary } from "@hyperjump/json-schema/experimental";
 import { readFile } from "node:fs/promises";
+import { draft202012, experimental } from "./hyperjump-runtime.mjs";
 import YAML from "yaml";
+
+const { registerSchema } = draft202012;
+const { defineVocabulary } = experimental;
 
 const parseYamlFromFile = async (filePath) => {
   const schemaYaml = await readFile(filePath, "utf8");

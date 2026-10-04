@@ -35,7 +35,8 @@ describe("Yarn Git dependency installation", () => {
     const env = {
       ...process.env,
       GIT_CONFIG_GLOBAL: gitConfig,
-      GIT_CONFIG_NOSYSTEM: "1"
+      GIT_CONFIG_NOSYSTEM: "1",
+      YARN_NM_HOISTING_LIMITS: "dependencies"
     };
     const mutableEnv = {
       ...env,
@@ -120,15 +121,20 @@ describe("Yarn Git dependency installation", () => {
         "--eval",
         [
           'const { createRequire } = await import("node:module");',
+          'const { pathToFileURL } = await import("node:url");',
           "const consumerRequire = createRequire(import.meta.url);",
           'const buildInfraRequire = createRequire(consumerRequire.resolve("@oai/build-infra/package.json"));',
           'const coverageRequire = createRequire(buildInfraRequire.resolve("@hyperjump/json-schema-coverage/vitest"));',
-          'if (buildInfraRequire.resolve("@hyperjump/browser") !== coverageRequire.resolve("@hyperjump/browser")) throw new Error("duplicate Hyperjump Browser runtimes");',
-          'if (buildInfraRequire.resolve("@hyperjump/json-schema") !== coverageRequire.resolve("@hyperjump/json-schema")) throw new Error("duplicate Hyperjump JSON Schema runtimes");',
           'const testHelpers = await import("@oai/build-infra/test");',
           'const md2htmlTests = await import("@oai/build-infra/test/md2html");',
           'const schemaHelpers = await import("@oai/build-infra/schema/vitest");',
           'const openApi30Helpers = await import("@oai/build-infra/schema/openapi-3-0-test");',
+          'const coverageBrowser = await import(pathToFileURL(coverageRequire.resolve("@hyperjump/browser")));',
+          'const coverageExperimental = await import(pathToFileURL(coverageRequire.resolve("@hyperjump/json-schema/experimental")));',
+          'const coverageOpenApi30 = await import(pathToFileURL(coverageRequire.resolve("@hyperjump/json-schema/openapi-3-0")));',
+          'if (openApi30Helpers.addMediaTypePlugin !== coverageBrowser.addMediaTypePlugin) throw new Error("duplicate Hyperjump Browser runtimes");',
+          'if (openApi30Helpers.buildSchemaDocument !== coverageExperimental.buildSchemaDocument) throw new Error("duplicate Hyperjump JSON Schema runtimes");',
+          'if (openApi30Helpers.validate !== coverageOpenApi30.validate) throw new Error("duplicate Hyperjump OpenAPI runtimes");',
           'const contentType = openApi30Helpers.contentTypeParser.parse("application/schema+yaml; schema=https://example.com/schema");',
           'if (contentType.parameters.schema !== "https://example.com/schema") throw new Error("content-type parser export is broken");',
           'console.log(typeof testHelpers.test, typeof md2htmlTests.registerMd2htmlFixtureTests, typeof schemaHelpers.registerSchema, typeof openApi30Helpers.contentTypeParser.format);'
