@@ -129,22 +129,24 @@ When Dependabot opens a pull request:
    consumer repository with the local `file:../build-infra` dependency.
 5. Merge the build-infra update.
 6. Run the **Qualify build-infra candidate** workflow for the merged commit.
-7. In each consumer repository that should pick up the change, run:
+7. For a released build-infra version, use the automatically opened consumer
+   pull requests. To repair an update manually, change the consumer's
+   `@oai/build-infra` dependency to the released SemVer range and run:
 
    ```sh
-   yarn up -R @oai/build-infra
+   yarn install
    yarn install --immutable
    ```
 
 8. Run the consumer's relevant tests, validation, and builds.
-9. Commit the consumer repository's `yarn.lock` update.
+9. For a manual repair, commit the consumer repository's `package.json` and
+   `yarn.lock` update.
 
-The consumer `package.json` should keep requesting
-`git+https://github.com/OAI/build-infra.git#main`. The consumer
-`yarn.lock` records both that branch request and the exact Git commit resolved
+The consumer `package.json` should request a released SemVer range such as
+`git+https://github.com/OAI/build-infra.git#semver:^1.1.0`. The consumer
+`yarn.lock` records both that range and the exact tagged Git commit resolved
 from it. That commit is intentional: immutable installs do not silently change
-behavior when `OAI/build-infra` moves forward. `yarn up -R` refreshes the
-resolution without changing `package.json`.
+behavior when `OAI/build-infra` moves forward.
 
 ## Build-Infra Releases
 
@@ -169,6 +171,8 @@ For each release:
 6. Review and approve the `build-infra-release` environment deployment.
 7. Confirm that the resulting annotated `vX.Y.Z` tag points to the qualified
    commit.
+8. Confirm that the downstream update workflow opened one pull request per
+   configured consumer repository.
 
 The workflow reads the version from `package.json`; the person running it does
 not type the version a second time. `yarn release:check` verifies the package
@@ -192,7 +196,8 @@ may change the lockfile only when that change is intentional:
 
 * Use `yarn install` once when creating a new repository's first lockfile.
 * Use `yarn up <package>` for an intentional package version update.
-* Use `yarn up -R @oai/build-infra` to refresh a consumer's `#main` resolution.
+* Change the consumer's released SemVer selector and run `yarn install` to
+  update build-infra intentionally.
 
 Yarn 4.18 has two security defaults that every consumer must configure:
 
