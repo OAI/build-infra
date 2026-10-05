@@ -55,7 +55,7 @@
     "highlight.js": "11.12.0",
     "markdown-it": "15.0.2",
     "markdownlint-cli2": "0.23.3",
-    "respec": "37.4.0",
+    "respec": "37.4.1",
     "semver": "7.8.5",
     "vite": "8.3.1",
     "vitest": "5.0.2",
