@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import { parseSyncArgs, synchronizeBranches } from "../src/sync/sync-branches.mjs";
+
+synchronizeBranches(parseSyncArgs(process.argv.slice(2)));

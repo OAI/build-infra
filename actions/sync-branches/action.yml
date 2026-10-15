@@ -1,0 +1,80 @@
+name: Synchronize specification branches
+description: Merge a shared branch into one or more development branches while preserving branch-owned source and test fixtures.
+
+inputs:
+  app-id:
+    description: GitHub App client ID used to push branches and create pull requests.
+    required: true
+  private-key:
+    description: GitHub App private key.
+    required: true
+  head:
+    description: Branch whose shared changes should flow downstream.
+    required: true
+  base:
+    description: One destination branch. Specify either base or base-pattern.
+    required: false
+  base-pattern:
+    description: Regular expression matching destination branch names. Specify either base or base-pattern.
+    required: false
+  auto-merge:
+    description: Watch required checks and administratively merge successful pull requests.
+    required: false
+    default: "false"
+  check-delay:
+    description: Seconds to wait before watching newly triggered checks.
+    required: false
+    default: "60"
+  config:
+    description: Path to the specification configuration file.
+    required: false
+    default: spec.config.json
+  label:
+    description: Label applied to newly created synchronization pull requests.
+    required: false
+    default: Housekeeping
+
+runs:
+  using: composite
+  steps:
+    - name: Generate access token
+      id: generate-token
+      uses: actions/create-github-app-token@v3
+      with:
+        client-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}
+
+    - name: Checkout repository
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+        token: ${{ steps.generate-token.outputs.token }}
+
+    - name: Create synchronization pull requests
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        INPUT_AUTO_MERGE: ${{ inputs.auto-merge }}
+        INPUT_BASE: ${{ inputs.base }}
+        INPUT_BASE_PATTERN: ${{ inputs.base-pattern }}
+        INPUT_CHECK_DELAY: ${{ inputs.check-delay }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        INPUT_HEAD: ${{ inputs.head }}
+        INPUT_LABEL: ${{ inputs.label }}
+      run: |
+        args=(
+          "--head=$INPUT_HEAD"
+          "--config=$INPUT_CONFIG"
+          "--label=$INPUT_LABEL"
+          "--check-delay=$INPUT_CHECK_DELAY"
+        )
+        if [[ -n "$INPUT_BASE" ]]; then
+          args+=("--base=$INPUT_BASE")
+        fi
+        if [[ -n "$INPUT_BASE_PATTERN" ]]; then
+          args+=("--base-pattern=$INPUT_BASE_PATTERN")
+        fi
+        if [[ "$INPUT_AUTO_MERGE" == "true" ]]; then
+          args+=("--auto-merge")
+        fi
+        node "$GITHUB_ACTION_PATH/../../src/sync/sync-branches.mjs" "${args[@]}"

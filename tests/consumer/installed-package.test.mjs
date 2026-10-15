@@ -31,6 +31,7 @@ describe("installed package behavior in a consumer repository", () => {
     expect(runBin(fixture, "oai-spec-test")).toContain("c8 --100");
     expect(() => runBin(fixture, "oai-spec-start-release", ["--no-push"])).toThrow(/development branch/);
     expect(() => runBin(fixture, "oai-spec-adjust-release-branch")).toThrow(/release branch/);
+    expect(() => runBin(fixture, "oai-spec-sync-branches")).toThrow(/--head is required/);
   });
 });
 
@@ -44,7 +45,7 @@ function createConsumerFixture() {
 
   mkdirSync(installedPackage, { recursive: true });
   mkdirSync(consumerBin, { recursive: true });
-  for (const path of ["bin", "configs", "src/md2html", "src/release", "src/schema", "src/shell"]) {
+  for (const path of ["bin", "configs", "src/md2html", "src/release", "src/schema", "src/shell", "src/sync"]) {
     cpSync(join(packageRoot, path), join(installedPackage, path), { recursive: true });
   }
   cpSync(join(packageRoot, "package.json"), join(installedPackage, "package.json"));
