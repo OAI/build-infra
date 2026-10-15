@@ -2,11 +2,16 @@
 
 import { readFile } from "node:fs/promises";
 import YAML from "yaml";
-import { BASIC } from "@hyperjump/json-schema/experimental";
-
 import contentTypeParser from "content-type";
-import { addMediaTypePlugin } from "@hyperjump/browser";
-import { buildSchemaDocument } from "@hyperjump/json-schema/experimental";
+import {
+  browser,
+  draft202012,
+  experimental,
+  openApi31
+} from "./hyperjump-runtime.mjs";
+
+const { addMediaTypePlugin } = browser;
+const { BASIC, buildSchemaDocument } = experimental;
 
 addMediaTypePlugin("application/schema+yaml", {
     parse: async (response) => {
@@ -40,13 +45,9 @@ const schemaType = args.schema || "schema";
 const outputFormat = args.format || defaultOutputFormat;
 const dialect = args.dialect || "draft-2020-12";
 
-// Import the appropriate validator based on dialect
-let validate, setMetaSchemaOutputFormat;
-if (dialect === "openapi-3-1") {
-  ({ validate, setMetaSchemaOutputFormat } = await import("@hyperjump/json-schema/openapi-3-1"));
-} else {
-  ({ validate, setMetaSchemaOutputFormat } = await import("@hyperjump/json-schema/draft-2020-12"));
-}
+const { validate, setMetaSchemaOutputFormat } = dialect === "openapi-3-1"
+  ? openApi31
+  : draft202012;
 
 // Config
 setMetaSchemaOutputFormat(outputFormat);
