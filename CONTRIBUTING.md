@@ -42,6 +42,8 @@ Release lifecycle:
 * `oai-spec-start-release` starts the next development PR branch.
 * `oai-spec-adjust-release-branch` prepares a release branch for merge to
   `main`.
+* `oai-spec-sync-branches` implements the Git operations used by the shared
+  branch-synchronization action.
 
 ## Before Changing Code
 
@@ -274,12 +276,13 @@ Good candidates for this repository:
 * shared JavaScript dependency versions;
 * Markdown, link, schema, and ReSpec behavior;
 * release lifecycle mechanics used by multiple specification repositories;
+* reusable branch-synchronization mechanics and their fixture tests;
 * templates for new specification repositories.
 
 Keep these in individual specification repositories:
 
 * contributor policy;
-* branch sync policy;
+* branch sync triggers, branch relationships, and automatic-merge policy;
 * CODEOWNERS;
 * issue templates;
 * labels, reviewers, and pull request wording;

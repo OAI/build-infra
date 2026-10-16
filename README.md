@@ -21,6 +21,7 @@ The package installs these command line tools:
 | `oai-spec-test` | Runs Vitest and JSON Schema coverage with the shared test dependencies. |
 | `oai-spec-start-release` | Starts the next `vX.Y-dev-start-X.Y.Z` release-preparation branch. |
 | `oai-spec-adjust-release-branch` | Prepares a `vX.Y.Z-rel` branch for merge to `main`. |
+| `oai-spec-sync-branches` | Creates branch-synchronization commits and pull requests while preserving destination-owned development content. |
 
 It also exports small helper modules for Vitest and schema tests, so
 specification repositories do not need to depend directly on Vitest, Hyperjump,
@@ -402,6 +403,63 @@ Keep fixtures that encode repository-specific behavior in the consumer. The
 fixtures in `tests/md2html/fixtures` in this repository demonstrate the file
 layout and exercise the same public helper as consumers.
 
+## Synchronizing Development Branches
+
+The reusable synchronization implementation lives in this repository, while
+each specification repository owns its trigger and branch policy. A consumer
+therefore keeps two small workflows: one for `main` to `dev`, and one for `dev`
+to its version-development branches.
+
+The `main` to `dev` job uses the composite action as follows:
+
+```yaml
+steps:
+  - uses: OAI/build-infra/actions/sync-branches@main
+    with:
+      app-id: ${{ secrets.OAI_SPEC_PUBLISHER_APPID }}
+      private-key: ${{ secrets.OAI_SPEC_PUBLISHER_PRIVATE_KEY }}
+      head: main
+      base: dev
+```
+
+The `dev` to version-development job selects all matching branches and can
+merge successful synchronization pull requests automatically:
+
+```yaml
+steps:
+  - uses: OAI/build-infra/actions/sync-branches@main
+    with:
+      app-id: ${{ secrets.OAI_SPEC_PUBLISHER_APPID }}
+      private-key: ${{ secrets.OAI_SPEC_PUBLISHER_PRIVATE_KEY }}
+      head: dev
+      base-pattern: '^v[0-9]+\.[0-9]+-dev$'
+      auto-merge: true
+```
+
+The action reads `release.removeOnReleaseBranch` from `spec.config.json`. Those
+paths are content owned by the destination development branch: source Markdown,
+schema fixtures, and repository-specific schema test runners. After merging the
+head branch, the action restores those paths exactly as they appear on the
+destination branch, including restoring their absence. Other files, including
+shared test support, continue to flow from `main` to `dev` and from `dev` to
+version branches.
+
+Synchronization branches are named `<base>-sync-with-<head>` and are recreated
+from the current destination on each run. Do not make manual changes on them;
+put repository-specific policy in the calling workflow or configuration. The
+action creates or updates a `Housekeeping` pull request. With `auto-merge: true`,
+it waits for required checks and uses the existing administrative merge policy.
+
+To reproduce only the Git operations locally, without pushing or creating a
+pull request, start from a clean checkout with current remote refs and run:
+
+```sh
+yarn oai-spec-sync-branches --head=main --base=dev --no-push --no-pr
+```
+
+This intentionally leaves the generated synchronization branch checked out so
+you can inspect its merge and restoration commits.
+
 ## Local Development
 
 When working on this package itself:
@@ -428,6 +486,7 @@ regressions. Useful examples:
 | `tests/qualification/qualify-consumer.test.mjs` | How candidate qualification selects an exact build-infra commit and chooses validation, test, build, and release checks from a consumer repository's contents and scripts. |
 | `tests/shell/bin-resolution.test.mjs` | How Markdown validation and formatting choose configs, when linkspector runs, and how command wrappers resolve hoisted binaries. |
 | `tests/release/release-commands.test.mjs` | The expected branch model for release commands, including clean-worktree and remote-branch guardrails. |
+| `tests/sync/sync-branches.test.mjs` | How branch synchronization preserves paths removed during a release, propagates shared infrastructure, and discovers multi-digit version branches. |
 | `tests/schema/schema-publish.test.mjs` | Schema publication behavior for source previews, versioned development branches, dated schema files, and Jekyll lander markdown. |
 | `tests/package/package-manager.test.mjs` | The Yarn version, `node_modules` linker, exact direct dependencies, and Puppeteer install-script policy required by consumers. |
 | `tests/package/exports.test.mjs` | Public helper modules that consumer test suites can import. |
