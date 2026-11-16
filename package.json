@@ -55,7 +55,7 @@
     "content-type": "3.1.1",
     "highlight.js": "11.12.0",
     "markdown-it": "15.0.3",
-    "markdownlint-cli2": "0.24.0",
+    "markdownlint-cli2": "0.24.1",
     "respec": "37.4.1",
     "semver": "7.8.5",
     "vite": "8.3.4",
